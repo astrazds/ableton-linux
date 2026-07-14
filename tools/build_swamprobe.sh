@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Build the PE diagnostic tools (swamprobe.exe, liveinject.exe) as real PEs
+# (no mingw, no msvcrt) the same way the patched Wine builds its own PE
+# modules: clang -target x86_64-windows + Wine's headers and x86_64-windows
+# import libs. Runs under the new-WoW64 patched Wine.
+set -e
+cd "$(dirname "$0")"
+SRC=~/Projects/Code/ableton/wine-d2d1-nspa-src
+BLD=$SRC/build-wow64
+INC=$SRC/include
+U=$BLD/dlls/user32/x86_64-windows
+K=$BLD/dlls/kernel32/x86_64-windows
+G=$BLD/dlls/gdi32/x86_64-windows
+N=$BLD/dlls/ntdll/x86_64-windows
+
+RES=$(clang -print-resource-dir)
+for tool in swamprobe liveinject; do
+  clang -target x86_64-windows-gnu -fuse-ld=lld --no-default-config \
+    -fno-stack-protector -mno-stack-arg-probe -nostdlib -nostdinc \
+    -Wall -O2 \
+    -isystem "$RES/include" -I "$INC" -I "$INC/msvcrt" \
+    -D__WINESRC__ \
+    -Wl,--subsystem,console -Wl,-e,mainCRTStartup \
+    -o $tool.exe $tool.c \
+    -L "$U" -L "$K" -L "$G" -L "$N" \
+    -luser32 -lkernel32 -lgdi32 -lntdll
+  echo "built $tool.exe"
+done

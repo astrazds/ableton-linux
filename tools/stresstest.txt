@@ -1,0 +1,8 @@
+stress: 30000 iterations
+iter 4999: reg_fail=0 win_fail=0 veh=0
+iter 9999: reg_fail=0 win_fail=0 veh=0
+iter 14999: reg_fail=0 win_fail=0 veh=0
+iter 19999: reg_fail=0 win_fail=0 veh=0
+iter 24999: reg_fail=0 win_fail=0 veh=0
+iter 29999: reg_fail=0 win_fail=0 veh=0
+DONE: iters=30000 reg_fail=0 win_fail=0 veh=0

@@ -1,0 +1,6 @@
+WPC flags 1847 pos 900x600 | window 900x600 client 892x547 | adj -> 900x600 (drift 0)
+created hwnd 00000000000300E0
+WPC flags 8134 pos 160x31 | window 160x31 client 0x0 | adj -> 8x53 (drift 22)
+WPC flags 8124 pos 900x600 | window 900x600 client 892x547 | adj -> 900x600 (drift 0)
+WPC flags 0014 pos 1008x734 | window 1008x734 client 1000x681 | adj -> 1008x734 (drift 0)
+WPC flags 1897 pos 1008x734 | window 1008x734 client 1000x681 | adj -> 1008x734 (drift 0)

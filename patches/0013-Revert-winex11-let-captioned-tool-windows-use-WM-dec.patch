@@ -1,0 +1,27 @@
+Subject: Revert "winex11: let captioned tool windows use WM
+ decorations at high DPI"
+
+This reverts commit 02afb562af4977fd669abda8bed37ac3c2230692.
+---
+ dlls/winex11.drv/window.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index 33f9e3cb..20dae46f 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -500,13 +500,7 @@ static unsigned long get_mwm_decorations_for_style( DWORD style, DWORD ex_style
+ {
+     unsigned long ret = 0;
+ 
+-    /* Tool windows (WS_EX_TOOLWINDOW) normally suppress WM decorations so Wine draws its
+-     * own small caption. But at 192 DPI that Wine-drawn caption is oversized (Ableton's
+-     * VST plugin editors are WS_EX_TOOLWINDOW|WS_CAPTION -> a huge title bar). If the tool
+-     * window has a real caption, let mutter decorate it instead: the WM frame is drawn at
+-     * the compositor scale, so it matches the main window's native GNOME title bar.
+-     * Caption-less tool windows (tooltips etc.) still fall through to ret=0 below. */
+-    if ((ex_style & WS_EX_TOOLWINDOW) && (style & WS_CAPTION) != WS_CAPTION) return 0;
++    if (ex_style & WS_EX_TOOLWINDOW) return 0;
+ 
+     if ((style & WS_CAPTION) == WS_CAPTION)
+     {

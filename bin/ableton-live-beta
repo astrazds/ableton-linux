@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Ableton Live 12 Beta launcher — isolated prefix, existing patched Wine stack.
+set -u
+
+WINE_ROOT="${ABLETON_WINE_ROOT:-$HOME/.local/opt/wine-d2d1-nspa-11.11}"
+export WINEPREFIX="${ABLETON_BETA_WINEPREFIX:-$HOME/Projects/Code/ableton/ableton-prefix-beta-12.4.5b7}"
+export PATH="$WINE_ROOT/bin:$PATH"
+export WINEDEBUG="${WINEDEBUG:--all}"
+export WINE_D3D_CONFIG="${WINE_D3D_CONFIG:-csmt=0x1}"
+export WINED3D_DCOMP_FORCE_FULL_REDRAW="${WINED3D_DCOMP_FORCE_FULL_REDRAW:-1}"
+export WINESERVER="$WINE_ROOT/bin/wineserver"
+
+if pgrep -af 'Ableton Live 12 Suite[.]exe' 2>/dev/null | grep -q 'ProgramData'; then
+    echo "Ableton Live 12 Suite is running; close it before launching the beta." >&2
+    exit 75
+fi
+
+if ! pgrep -af 'Ableton Live 12 Beta[.]exe' 2>/dev/null | grep -q 'ProgramData'; then
+    "$WINE_ROOT/bin/wineserver" -k 2>/dev/null || true
+    /usr/bin/wineserver -k 2>/dev/null || true
+fi
+
+export WINEASIO_NUMBER_INPUTS="${WINEASIO_NUMBER_INPUTS:-2}"
+export WINEASIO_NUMBER_OUTPUTS="${WINEASIO_NUMBER_OUTPUTS:-2}"
+export WINEASIO_FIXED_BUFFERSIZE="${WINEASIO_FIXED_BUFFERSIZE:-on}"
+export WINEASIO_PREFERRED_BUFFERSIZE="${WINEASIO_PREFERRED_BUFFERSIZE:-256}"
+export WINEASIO_CONNECT_TO_HARDWARE="${WINEASIO_CONNECT_TO_HARDWARE:-on}"
+export PIPEWIRE_LATENCY="${PIPEWIRE_LATENCY:-256/48000}"
+
+if command -v jacklinkd >/dev/null 2>&1 && ! pgrep -x jacklinkd >/dev/null 2>&1; then
+    nohup jacklinkd >"${XDG_CACHE_HOME:-$HOME/.cache}/jacklinkd.log" 2>&1 &
+fi
+
+EXE='C:\ProgramData\Ableton\Live 12 Beta\Program\Ableton Live 12 Beta.exe'
+
+run=(wine)
+if command -v chrt >/dev/null 2>&1 && chrt -r 10 true >/dev/null 2>&1; then
+    run=(chrt -r 10 wine)
+fi
+
+if [ -n "${ABLETON_VDESK:-}" ]; then
+    exec "${run[@]}" explorer "/desktop=AbletonLive12Beta,${ABLETON_VDESK}" "$EXE"
+elif [ "$#" -gt 0 ]; then
+    exec "${run[@]}" start "$@"
+else
+    exec "${run[@]}" "$EXE"
+fi

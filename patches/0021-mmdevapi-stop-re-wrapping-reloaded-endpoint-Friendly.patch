@@ -1,0 +1,56 @@
+Subject: mmdevapi: stop re-wrapping reloaded endpoint
+ FriendlyNames
+
+Add an init_props flag: generate endpoint name properties only when creating a device from a raw
+driver name (load_driver_devices); reloading from the registry keeps the stored values.
+
+---
+ dlls/mmdevapi/devenum.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/mmdevapi/devenum.c b/dlls/mmdevapi/devenum.c
+index 11d20f29..9db855b3 100644
+--- a/dlls/mmdevapi/devenum.c
++++ b/dlls/mmdevapi/devenum.c
+@@ -441,7 +441,7 @@ static const WCHAR *find_product_name_override(const WCHAR *device_id)
+  * If GUID is null, a random guid will be assigned
+  * and the device will be created
+  */
+-static MMDevice *MMDevice_Create(const WCHAR *name, GUID *id, EDataFlow flow, DWORD state, BOOL setdefault)
++static MMDevice *MMDevice_Create(const WCHAR *name, GUID *id, EDataFlow flow, DWORD state, BOOL setdefault, BOOL init_props)
+ {
+     HKEY key, root;
+     MMDevice *device, *cur = NULL;
+@@ -494,7 +494,13 @@ static MMDevice *MMDevice_Create(const WCHAR *name, GUID *id, EDataFlow flow, DW
+     {
+         HKEY keyprop;
+         RegSetValueExW(key, L"DeviceState", 0, REG_DWORD, (const BYTE*)&state, sizeof(DWORD));
+-        if (!RegCreateKeyExW(key, L"Properties", 0, NULL, 0, KEY_WRITE|KEY_READ|KEY_WOW64_64KEY, NULL, &keyprop, NULL))
++        /* Only (re)generate the endpoint name properties from a raw driver-supplied
++         * name. When a device is reloaded from the registry its stored FriendlyName
++         * is already the final "Type (desc)" string; wrapping it again here would
++         * nest it one level deeper on every run ("Speakers (Speakers (...))"),
++         * growing without bound for devices that are no longer present until audio
++         * enumeration chokes. Preserve the stored properties in that case. */
++        if (init_props && !RegCreateKeyExW(key, L"Properties", 0, NULL, 0, KEY_WRITE|KEY_READ|KEY_WOW64_64KEY, NULL, &keyprop, NULL))
+         {
+             PROPVARIANT pv;
+             WCHAR *type;
+@@ -624,7 +630,7 @@ HRESULT load_devices_from_reg(void)
+             && pv.vt == VT_LPWSTR)
+         {
+             MMDevice_Create(pv.pwszVal, &guid, curflow,
+-                    DEVICE_STATE_NOTPRESENT, FALSE);
++                    DEVICE_STATE_NOTPRESENT, FALSE, FALSE);
+             CoTaskMemFree(pv.pwszVal);
+         }
+     } while (1);
+@@ -688,7 +694,7 @@ HRESULT load_driver_devices(EDataFlow flow)
+ 
+         get_device_guid( flow, dev_name, &guid );
+ 
+-        dev = MMDevice_Create(name, &guid, flow, DEVICE_STATE_ACTIVE, params.default_idx == i);
++        dev = MMDevice_Create(name, &guid, flow, DEVICE_STATE_ACTIVE, params.default_idx == i, TRUE);
+         set_format(dev);
+     }
+ 

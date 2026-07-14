@@ -1,0 +1,61 @@
+Subject: win32u: map shared session views MAP_SHARED
+ (read-write) instead of private
+
+Request SECTION_MAP_WRITE and map session views PAGE_READWRITE so they are MAP_SHARED and stay coherent
+with wineserver writes; falls back to read-only if the section denies write. Nothing writes through the view.
+---
+ dlls/win32u/winstation.c | 35 ++++++++++++++++++++++++++---------
+ 1 file changed, 26 insertions(+), 9 deletions(-)
+
+diff --git a/dlls/win32u/winstation.c b/dlls/win32u/winstation.c
+index 64a92419..a372b6bd 100644
+--- a/dlls/win32u/winstation.c
++++ b/dlls/win32u/winstation.c
+@@ -120,21 +120,38 @@ static NTSTATUS map_shared_session_block( SIZE_T offset, SIZE_T size, struct ses
+ 
+     if (!(block = calloc( 1, sizeof(*block) ))) return STATUS_NO_MEMORY;
+ 
++    /* Map the view with write access so ntdll uses MAP_SHARED: read-only views
++     * are mapped MAP_PRIVATE on Linux, and private views of the session memfd
++     * can end up permanently stale (they stop observing wineserver's writes),
++     * which makes session objects read as zeroes: window class registration and
++     * window creation then fail at random ("plug window creation failed",
++     * popup menus dying in WM_NCCREATE). We never write through the view. */
+     InitializeObjectAttributes( &attr, &name, 0, NULL, NULL );
+-    if ((status = NtOpenSection( &handle, SECTION_MAP_READ, &attr )))
+-        WARN( "Failed to open shared session section, status %#x\n", status );
+-    else
++    if (!(status = NtOpenSection( &handle, SECTION_MAP_READ | SECTION_MAP_WRITE, &attr )))
+     {
+         if ((status = NtMapViewOfSection( handle, GetCurrentProcess(), (void **)&block->data, 0, 0,
+-                                          &off, &block->size, ViewUnmap, 0, PAGE_READONLY )))
+-            WARN( "Failed to map shared session block, status %#x\n", status );
++                                          &off, &block->size, ViewUnmap, 0, PAGE_READWRITE )))
++            WARN( "Failed to map shared session block read-write, status %#x\n", status );
++        NtClose( handle );
++    }
++    if (status)
++    {
++        InitializeObjectAttributes( &attr, &name, 0, NULL, NULL );
++        if ((status = NtOpenSection( &handle, SECTION_MAP_READ, &attr )))
++            WARN( "Failed to open shared session section, status %#x\n", status );
+         else
+         {
+-            list_add_tail( &session_blocks, &block->entry );
+-            block->offset = off.QuadPart;
+-            assert( block->offset + block->size > block->offset );
++            if ((status = NtMapViewOfSection( handle, GetCurrentProcess(), (void **)&block->data, 0, 0,
++                                              &off, &block->size, ViewUnmap, 0, PAGE_READONLY )))
++                WARN( "Failed to map shared session block, status %#x\n", status );
++            NtClose( handle );
+         }
+-        NtClose( handle );
++    }
++    if (!status)
++    {
++        list_add_tail( &session_blocks, &block->entry );
++        block->offset = off.QuadPart;
++        assert( block->offset + block->size > block->offset );
+     }
+ 
+     if (status) free( block );

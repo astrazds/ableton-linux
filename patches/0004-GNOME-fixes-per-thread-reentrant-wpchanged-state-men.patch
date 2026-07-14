@@ -1,0 +1,91 @@
+Subject: GNOME fixes: per-thread reentrant-wpchanged state (menu
+ wedge race); no MWM decor for custom-NC windows (double-frame/white border)
+
+---
+ dlls/win32u/ntuser_private.h |  2 ++
+ dlls/win32u/window.c         | 25 +++++++++----------------
+ dlls/winex11.drv/window.c    |  4 ++++
+ 3 files changed, 15 insertions(+), 16 deletions(-)
+
+diff --git a/dlls/win32u/ntuser_private.h b/dlls/win32u/ntuser_private.h
+index 978700a3..4fcb5c11 100644
+--- a/dlls/win32u/ntuser_private.h
++++ b/dlls/win32u/ntuser_private.h
+@@ -127,6 +127,8 @@ struct user_thread_info
+     DWORD                         clipping_reset;         /* time when clipping was last reset */
+     struct session_thread_data   *session_data;           /* shared session thread data */
+     struct mouse_tracking_info   *mouse_tracking_info;    /* NtUserTrackMouseEvent handling */
++    HWND                          reentrant_wpchanged_hwnd;  /* window inside a nested WM_WINDOWPOSCHANGED send */
++    UINT                          reentrant_wpchanged_depth; /* nesting depth of WM_WINDOWPOSCHANGED sends */
+ };
+ 
+ extern struct user_thread_info *get_user_thread_info(void);
+diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
+index 384682b1..cc924a93 100644
+--- a/dlls/win32u/window.c
++++ b/dlls/win32u/window.c
+@@ -54,9 +54,6 @@ static void *client_objects[MAX_USER_HANDLES];
+ 
+ static volatile unsigned int startup_info_flags;
+ static unsigned int startup_show_window;
+-static DWORD reentrant_wpchanged_thread;
+-static HWND reentrant_wpchanged_hwnd;
+-static UINT reentrant_wpchanged_depth;
+ 
+ static unsigned int set_startup_info_flags( unsigned int mask, unsigned int flags )
+ {
+@@ -4059,12 +4056,11 @@ BOOL set_window_pos( WINDOWPOS *winpos, int parent_x, int parent_y )
+         static const UINT reentrant_resize_flags =
+             SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER;
+         DWORD style = get_window_long( winpos->hwnd, GWL_STYLE );
+-        DWORD tid = GetCurrentThreadId();
++        struct user_thread_info *thread_info = get_user_thread_info();
+         BOOL suppress_reentrant_wpch =
+             !(style & WS_CHILD) &&
+-            reentrant_wpchanged_depth &&
+-            reentrant_wpchanged_thread == tid &&
+-            reentrant_wpchanged_hwnd == winpos->hwnd &&
++            thread_info->reentrant_wpchanged_depth &&
++            thread_info->reentrant_wpchanged_hwnd == winpos->hwnd &&
+             (orig_flags & reentrant_resize_flags) == reentrant_resize_flags &&
+             !(orig_flags & (SWP_NOSIZE | SWP_SHOWWINDOW | SWP_HIDEWINDOW));
+         /* WM_WINDOWPOSCHANGED is sent even if SWP_NOSENDCHANGING is set
+@@ -4078,17 +4074,14 @@ BOOL set_window_pos( WINDOWPOS *winpos, int parent_x, int parent_y )
+          * size-only WM_WINDOWPOSCHANGED update. */
+         if (!suppress_reentrant_wpch)
+         {
+-            DWORD prev_thread = reentrant_wpchanged_thread;
+-            HWND prev_hwnd = reentrant_wpchanged_hwnd;
+-            UINT prev_depth = reentrant_wpchanged_depth;
++            HWND prev_hwnd = thread_info->reentrant_wpchanged_hwnd;
++            UINT prev_depth = thread_info->reentrant_wpchanged_depth;
+ 
+-            reentrant_wpchanged_thread = tid;
+-            reentrant_wpchanged_hwnd = winpos->hwnd;
+-            reentrant_wpchanged_depth = prev_depth + 1;
++            thread_info->reentrant_wpchanged_hwnd = winpos->hwnd;
++            thread_info->reentrant_wpchanged_depth = prev_depth + 1;
+             send_message( winpos->hwnd, WM_WINDOWPOSCHANGED, 0, (LPARAM)winpos );
+-            reentrant_wpchanged_thread = prev_thread;
+-            reentrant_wpchanged_hwnd = prev_hwnd;
+-            reentrant_wpchanged_depth = prev_depth;
++            thread_info->reentrant_wpchanged_hwnd = prev_hwnd;
++            thread_info->reentrant_wpchanged_depth = prev_depth;
+         }
+     }
+ 
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index 9c16ade0..0f6d34ee 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -519,6 +519,10 @@ static unsigned long get_mwm_decorations_for_style( DWORD style, DWORD ex_style
+ static unsigned long get_mwm_decorations( struct x11drv_win_data *data, DWORD style, DWORD ex_style )
+ {
+     if (!data->managed) return 0;
++    /* Windows that draw their own non-client area (client == window, e.g. Ableton Live's
++     * custom-chrome windows) must not request WM decorations: WMs that honor MWM hints
++     * with real frames (mutter) would paint a second frame around the app's own chrome. */
++    if (EqualRect( &data->rects.window, &data->rects.client )) return 0;
+     return get_mwm_decorations_for_style( style, ex_style );
+ }
+ 

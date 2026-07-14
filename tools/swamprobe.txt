@@ -1,0 +1,178 @@
+=== swamprobe dump ===
+fg=0000000000010020 active=0000000000000000 capture=0000000000000000 cursorwin=00000000000100A4 pos=(2373,1906)
+fg-thread: active=0000000000010020 focus=0000000000010020 capture=0000000000000000 caret=0000000000000000 flags=0
+desktop=0000000000010020 focus_time=0
+live=00000000000100A4 focus_time=9508024 xwin=4000005 vis=1
+=== top-level windows (+ children) ===
+
+hwnd=00000000000301A2 pid=1188 tid=1488 vis=0 cls='IME' 'Default IME'
+    style=8c000000 ex=00000000 DISABLED dpi=192 aware=PERMON
+    winrect=(0,0)-(1,1) 1x1 client=1x1
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=000000000001019A pid=1188 tid=1496 vis=0 cls='Chrome_WidgetWin_0' ''
+    style=8c000000 ex=00000080 TOOL DISABLED dpi=192 aware=PERMON
+    winrect=(0,0)-(0,0) 0x0 client=0x0
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=000000000001019C pid=1188 tid=1496 vis=0 cls='IME' 'Default IME'
+    style=8c000000 ex=00000000 DISABLED dpi=192 aware=PERMON
+    winrect=(0,0)-(1,1) 1x1 client=1x1
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=1
+
+hwnd=000000000001017C pid=616 tid=620 vis=0 cls='Chrome_WidgetWin_0' ''
+    style=8c000000 ex=00000080 TOOL DISABLED dpi=192 aware=PERMON
+    winrect=(0,0)-(0,0) 0x0 client=0x0
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+    hwnd=0000000000020178 pid=616 tid=620 vis=0 cls='Chrome_RenderWidgetHostHWND' 'Chrome Legacy Window'
+        style=46300000 ex=00000020 TRANSPARENT dpi=192 aware=PERMON
+        winrect=(0,0)-(2038,2560) 2038x2560 client=2038x2560
+        center=(1019,1280) -> WindowFromPoint=00000000000100A4 (*** OTHER ***) NCHITTEST=0
+
+hwnd=0000000000020160 pid=616 tid=620 vis=0 cls='Chrome_WidgetWin_0' ''
+    style=06cf0000 ex=00000100 dpi=192 aware=PERMON
+    winrect=(0,0)-(3072,1920) 3072x1920 client=3062x1859
+    center=(1536,960) -> WindowFromPoint=00000000000100A4 (*** OTHER ***) NCHITTEST=1
+
+hwnd=0000000000010148 pid=1084 tid=1088 vis=0 cls='WineConsoleClass' 'C:\ProgramData\Ableton\Live 12 Suite\Resources\Extensions\Index\Ableton Index.exe'
+    style=04ef0000 ex=00000100 dpi=192 aware=SYSTEM
+    winrect=(0,0)-(1404,861) 1404x861 client=1360x800
+    center=(702,430) -> WindowFromPoint=00000000000100A4 (*** OTHER ***) NCHITTEST=1
+
+hwnd=0000000000010150 pid=1084 tid=1088 vis=0 cls='IME' 'Default IME'
+    style=8c000000 ex=00000000 DISABLED dpi=192 aware=SYSTEM
+    winrect=(0,0)-(1,1) 1x1 client=1x1
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=1
+
+hwnd=0000000000010138 pid=676 tid=1048 vis=0 cls='crashpad_SessionEndWatcher' ''
+    style=04c00000 ex=00000100 dpi=96 aware=UNAWARE
+    winrect=(0,0)-(280,68) 280x68 client=268x4
+    center=(140,34) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=000000000001013C pid=676 tid=1048 vis=0 cls='IME' 'Default IME'
+    style=8c000000 ex=00000000 DISABLED dpi=96 aware=UNAWARE
+    winrect=(0,0)-(2,2) 2x2 client=2x2
+    center=(1,1) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=0000000000020134 pid=32 tid=36 vis=0 cls='JUCE_16238586b6' 'JUCEWindow'
+    style=04c00000 ex=00000100 dpi=192 aware=PERMON
+    winrect=(0,0)-(274,61) 274x61 client=268x4
+    JUCE: USERDATA=0000000000000000 extra8=0000000000000000 extra0=0000000000000000 cbWndExtra=4
+    JUCE: wndproc=0000000000000000 classproc=00000000ffff0019  *** SUBCLASSED ***
+    center=(137,30) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=2
+
+hwnd=000000000001010E pid=616 tid=620 vis=0 cls='Base_PowerMessageWindow' ''
+    style=84000000 ex=08000000 NOACTIVATE dpi=96 aware=UNAWARE
+    winrect=(0,0)-(0,0) 0x0 client=0x0
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=0000000000010110 pid=616 tid=620 vis=0 cls='IME' 'Default IME'
+    style=8c000000 ex=00000000 DISABLED dpi=96 aware=UNAWARE
+    winrect=(0,0)-(2,2) 2x2 client=2x2
+    center=(1,1) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=00000000000100EE pid=648 tid=652 vis=0 cls='WineConsoleClass' 'C:\ProgramData\Ableton\Live 12 Suite\Resources\Extensions\AddOns\Ableton AddOns.exe'
+    style=04ef0000 ex=00000100 dpi=192 aware=SYSTEM
+    winrect=(0,0)-(1404,861) 1404x861 client=1360x800
+    center=(702,430) -> WindowFromPoint=00000000000100A4 (*** OTHER ***) NCHITTEST=1
+
+hwnd=00000000000100F6 pid=648 tid=652 vis=0 cls='IME' 'Default IME'
+    style=8c000000 ex=00000000 DISABLED dpi=192 aware=SYSTEM
+    winrect=(0,0)-(1,1) 1x1 client=1x1
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=1
+
+hwnd=00000000000100A4 pid=32 tid=36 vis=1 cls='Ableton Live Window Class' 'Untitled - Ableton Live 12 Suite'
+    style=16cf0000 ex=00000100 dpi=192 aware=PERMON
+    winrect=(-5,16)-(4065,2565) 4070x2549 client=4060x2451
+    center=(2030,1290) -> WindowFromPoint=00000000000100A4 (SELF) NCHITTEST=1
+
+hwnd=00000000000300DE pid=32 tid=36 vis=0 cls='AbletonWebViewHelperWindow' ''
+    style=04cf0000 ex=00000100 dpi=192 aware=PERMON
+    winrect=(0,0)-(274,61) 274x61 client=264x0
+    center=(137,30) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=8
+    hwnd=00000000000100E2 pid=32 tid=36 vis=0 cls='Chrome_WidgetWin_0' ''
+        style=46010000 ex=00000000 dpi=192 aware=PERMON
+        winrect=(5,56)-(269,56) 264x0 client=264x0
+        center=(137,56) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+    hwnd=000000000001016E pid=616 tid=620 vis=0 cls='Chrome_WidgetWin_1' 'Learn View 12'
+        style=46000000 ex=00200000 dpi=192 aware=PERMON
+        winrect=(5,56)-(269,56) 264x0 client=264x0
+        center=(137,56) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+    hwnd=000000000001019E pid=1188 tid=1496 vis=0 cls='Intermediate D3D Window' ''
+        style=5c000000 ex=00280024 LAYERED TRANSPARENT DISABLED dpi=192 aware=PERMON
+        winrect=(5,56)-(2043,2616) 2038x2560 client=2038x2560
+        center=(1024,1336) -> WindowFromPoint=00000000000100A4 (*** OTHER ***) NCHITTEST=1
+
+hwnd=00000000002100D6 pid=32 tid=36 vis=0 cls='JUCE_1622159093' 'JUCEWindow'
+    style=04c00000 ex=00000100 dpi=192 aware=PERMON
+    winrect=(0,0)-(274,61) 274x61 client=268x4
+    JUCE: USERDATA=0000000000000000 extra8=0000000000000000 extra0=0000000000000000 cbWndExtra=4
+    JUCE: wndproc=0000000000000000 classproc=00000000ffff0016  *** SUBCLASSED ***
+    center=(137,30) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=2
+
+hwnd=000000000001009C pid=32 tid=36 vis=0 cls='Ableton Live Window Class' ''
+    style=04cf0000 ex=00000100 dpi=192 aware=PERMON
+    winrect=(0,0)-(274,61) 274x61 client=264x0
+    center=(137,30) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=8
+
+hwnd=0000000000020052 pid=32 tid=36 vis=0 cls='Wine IME' ''
+    style=84000000 ex=00000080 TOOL dpi=192 aware=PERMON
+    winrect=(0,0)-(1,1) 1x1 client=1x1
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=1
+
+hwnd=00000000000100A2 pid=32 tid=36 vis=0 cls='IME' 'Default IME'
+    style=8c000000 ex=00000000 DISABLED dpi=192 aware=PERMON
+    winrect=(0,0)-(1,1) 1x1 client=1x1
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=1
+
+hwnd=000000000001004A pid=104 tid=108 vis=0 cls='WineDdeServerName' ''
+    style=84000000 ex=00000000 dpi=192 aware=PERMON
+    winrect=(0,0)-(0,0) 0x0 client=0x0
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=0000000000010048 pid=104 tid=108 vis=0 cls='WineDdeServerName' ''
+    style=84000000 ex=00000000 dpi=192 aware=PERMON
+    winrect=(0,0)-(0,0) 0x0 client=0x0
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=0000000000010046 pid=104 tid=108 vis=0 cls='WineDdeServerName' ''
+    style=84000000 ex=00000000 dpi=192 aware=PERMON
+    winrect=(0,0)-(0,0) 0x0 client=0x0
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=0000000000010044 pid=104 tid=108 vis=0 cls='WineDdeEventClass' ''
+    style=84000000 ex=00000000 dpi=192 aware=PERMON
+    winrect=(0,0)-(0,0) 0x0 client=0x0
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=000000000001003C pid=104 tid=108 vis=0 cls='Shell_TrayWnd' ''
+    style=04c80000 ex=00000100 dpi=192 aware=PERMON
+    winrect=(0,0)-(294,93) 294x93 client=288x36
+    center=(147,46) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=2
+
+hwnd=00000000000101AE pid=104 tid=108 vis=0 cls='Wine IME' ''
+    style=84000000 ex=00000080 TOOL dpi=192 aware=PERMON
+    winrect=(0,0)-(1,1) 1x1 client=1x1
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=1
+
+hwnd=0000000000010042 pid=104 tid=108 vis=0 cls='IME' 'Default IME'
+    style=8c000000 ex=00000000 DISABLED dpi=192 aware=PERMON
+    winrect=(0,0)-(1,1) 1x1 client=1x1
+    center=(0,0) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=1
+
+hwnd=00000000000300D8 pid=32 tid=36 vis=0 cls='Static' 'DXGI device window'
+    style=0cc00000 ex=00000100 DISABLED dpi=192 aware=PERMON
+    winrect=(0,0)-(274,61) 274x61 client=268x4
+    center=(137,30) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=-1
+
+hwnd=00000000000301A0 pid=1188 tid=1488 vis=0 cls='Static' 'DXGI device window'
+    style=0cc00000 ex=00000100 DISABLED dpi=192 aware=PERMON
+    winrect=(0,0)-(274,61) 274x61 client=268x4
+    center=(137,30) -> WindowFromPoint=0000000000010020 (*** OTHER ***) NCHITTEST=0
+
+hwnd=00000000000301A4 pid=1188 tid=1488 vis=0 cls='WineDCompSwapchain' 'DComp Swapchain'
+    style=40000000 ex=00000004 dpi=192 aware=PERMON
+    winrect=(0,0)-(2038,2560) 2038x2560 client=2038x2560
+    center=(1019,1280) -> WindowFromPoint=00000000000100A4 (*** OTHER ***) NCHITTEST=0
+
+=== 30 top-level windows ===

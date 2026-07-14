@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+runtime="${ABLETON_PORTAL_WINE_ROOT:-$HOME/.local/opt/wine-d2d1-nspa-11.11-portal}"
+prefix="${ABLETON_WINEPREFIX:-$HOME/.wine-ableton}"
+
+if [[ ! -x "$runtime/bin/wine" || ! -x "$runtime/bin/wineserver" ]]; then
+    echo "Portal-enabled Ableton Wine runtime is missing: $runtime" >&2
+    exit 69
+fi
+
+# Keep this invocation on one runtime and one prefix. Inherited Wine variables
+# can otherwise select another loader, DLL tree, prefix architecture, or portal
+# force policy while the command appears to be using this wrapper.
+unset WINELOADER WINEDLLPATH WINEDLLOVERRIDES WINEARCH WINEESYNC WINEFSYNC WINE_FORCE_PORTAL
+export WINEPREFIX="$prefix"
+export WINESERVER="$runtime/bin/wineserver"
+export PATH="$runtime/bin:$PATH"
+export WINEDEBUG="${WINEDEBUG:--all}"
+
+if [[ "${ABLETON_PORTAL_FORCE:-0}" == 1 ]]; then
+    export WINE_FORCE_PORTAL=1
+fi
+
+exec "$runtime/bin/wine" "$@"

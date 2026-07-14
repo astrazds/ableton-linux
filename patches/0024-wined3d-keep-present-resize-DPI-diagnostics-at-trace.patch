@@ -1,0 +1,61 @@
+Subject: wined3d: keep present/resize DPI diagnostics at trace
+ level
+
+Emit the PRESENT-DBG/RESIZE-DBG probes at trace level instead of fixme.
+
+---
+ dlls/wined3d/swapchain.c | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/dlls/wined3d/swapchain.c b/dlls/wined3d/swapchain.c
+index 77be38da..e694ae5c 100644
+--- a/dlls/wined3d/swapchain.c
++++ b/dlls/wined3d/swapchain.c
+@@ -360,6 +360,32 @@ HRESULT CDECL wined3d_swapchain_present(struct wined3d_swapchain *swapchain,
+         dst_rect = &d;
+     }
+ 
++    /* DPI-ghost diagnosis: log the caller's DPI context, the resolved dst
++     * rect and the backbuffer size; rate-limited to the first few presents
++     * plus any change (a flip-flopping thread context / dst size is the
++     * Pianoteq half-size ghost signature). */
++    {
++        static LONG dbg_count;
++        static LONG last_w, last_h, last_ctx, last_bb_w, last_bb_h;
++        LONG w = dst_rect->right - dst_rect->left, h = dst_rect->bottom - dst_rect->top;
++        LONG ctx = (LONG)(LONG_PTR)GetThreadDpiAwarenessContext();
++        LONG n = InterlockedIncrement(&dbg_count);
++
++        if (n <= 5 || w != last_w || h != last_h || ctx != last_ctx
++                || (LONG)desc->backbuffer_width != last_bb_w
++                || (LONG)desc->backbuffer_height != last_bb_h)
++        {
++            static LONG dbg_changes;
++            LONG c = InterlockedIncrement(&dbg_changes);
++            if (c <= 500 || !(c % 100))
++                TRACE("PRESENT-DBG #%ld: swapchain %p win %p thread_ctx %#lx dst %s buffer %ux%u.\n",
++                        n, swapchain, swapchain->win_handle, ctx, wine_dbgstr_rect(dst_rect),
++                        desc->backbuffer_width, desc->backbuffer_height);
++        }
++        last_w = w; last_h = h; last_ctx = ctx;
++        last_bb_w = desc->backbuffer_width; last_bb_h = desc->backbuffer_height;
++    }
++
+     wined3d_cs_emit_present(swapchain->device->cs, swapchain, src_rect,
+             dst_rect, dst_window_override, swap_interval, flags);
+ 
+@@ -2687,6 +2713,14 @@ HRESULT CDECL wined3d_swapchain_resize_buffers(struct wined3d_swapchain *swapcha
+             height = client_rect.bottom;
+     }
+ 
++    /* DPI-ghost diagnosis: JUCE computes explicit resize dimensions from its
++     * own (possibly DPI-virtualized) view of the window — log what it asked
++     * for together with its thread context. */
++    TRACE("RESIZE-DBG: swapchain %p win %p thread_ctx %#lx %ux%u -> %ux%u.\n",
++            swapchain, swapchain->state.device_window,
++            (LONG)(LONG_PTR)GetThreadDpiAwarenessContext(),
++            desc->backbuffer_width, desc->backbuffer_height, width, height);
++
+     if (width != desc->backbuffer_width || height != desc->backbuffer_height)
+     {
+         desc->backbuffer_width = width;

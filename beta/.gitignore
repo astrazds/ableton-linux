@@ -1,0 +1,8 @@
+*.csv
+build/*
+tmp/*
+
+# Tester-submitted reports and contact data: PII, never in version control.
+# (The 2026-07-11 macOS capture also predates the redaction word-boundary
+# rule — see scripts/README.md.)
+testers/

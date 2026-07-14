@@ -1,0 +1,30 @@
+system dpi (GetDpiForSystem): 96
+thread dpi awareness ctx: 0000000000000022
+
+-- system metrics (plain / ForDpi96) --
+SM_CYCAPTION: 26 / 26
+SM_CYMENU: 19 / 19
+SM_CYMENUSIZE: 18 / 18
+SM_CXSIZEFRAME: 4 / 4
+SM_CYSIZEFRAME: 4 / 4
+SM_CXPADDEDBORDER: 0 / 0
+SM_CXBORDER: 1 / 1
+SM_CYBORDER: 1 / 1
+SM_CXEDGE: 2 / 2
+SM_CYEDGE: 2 / 2
+
+-- SPI_GETNONCLIENTMETRICS ForDpi(96) --
+iBorderWidth 1 iPaddedBorderWidth 0 iCaptionHeight 25 iMenuHeight 18
+MenuFont height -11  CaptionFont height -13
+
+-- AdjustWindowRect* on (0,0)-(1000,500), style 16cf0000 ex 00000100 --
+AdjustWindowRectEx   menu=0: (-4,-30)-(1004,504)  v-extra 34
+AdjustWindowRectEx   menu=1: (-4,-49)-(1004,504)  v-extra 53
+AdjustWindowRectExForDpi(96) menu=0: (-4,-30)-(1004,504)  v-extra 34
+AdjustWindowRectExForDpi(96) menu=1: (-4,-49)-(1004,504)  v-extra 53
+
+-- real window (not shown), outer 1000x500 --
+window rect (100,100)-(1100,600) 1000x500
+client rect 992x443  -> NC total v 57, h 8
+menu bar rect (104,131)-(1096,154) height 23
+round trip: client 992x443 + adjust(menu=1) = 1000x496 (actual outer 1000x500, drift +d)

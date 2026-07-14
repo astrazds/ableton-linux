@@ -1,0 +1,74 @@
+Base tree: https://github.com/giang17/wine.git
+Branch:    d2d1-dcomp-11.11  (wine-11.11 + squash commit 7ea0c8b7dd "d2d1-dcomp stack: port to wine-11.11")
+
+Apply the 00*.patch series in order on top of that branch tip with `git am`
+(rebuild-wine.sh does this). Patches 0001-0030 were regenerated 2026-07-09 with
+`git format-patch 7ea0c8b7..HEAD -- ':!build-wow64'` from the working tree at
+~/Projects/Code/ableton/wine-d2d1-nspa-src (HEAD 182ae79b); that is the full
+30-commit history, including the titlebar experiments and their reverts
+(0008-0013) — apply all of them, the net result is what runs.
+Patches 0031 and 0032 were exported 2026-07-11 from a disposable isolated
+worktree on base 182ae79b (commits 8c51a80e and 66f0cc98 there). The mailbox
+patches shipped here are the canonical record of those commits; they match the
+project-root exports in ~/Projects/Code/ableton by git patch-id. The full
+32-patch series is regenerated as format-patch 0001-0030 from
+wine-d2d1-nspa-src plus these two mailbox patches.
+Patches 0033 and 0034 were exported 2026-07-14 the same way, from a
+disposable worktree on base 182ae79b (commits 21be973f and 283d8fa9 there):
+two stability fixes adopted from a review of the ENCORE repository, see
+ABLETON-WINE-ENCORE-REVIEW.md. The 0027 patch file was removed from the
+series directory on 2026-07-14; its commit remains in the tree history, so
+regenerating 0001-0030 from the tree will re-create it.
+
+The previous 6-patch series (state of 2026-07-03, commit b826f21e) is in
+archive-2026-07-03/ for reference only.
+
+Provenance:
+  0001      = sashaduke/ableton-live12-linux patches/0001-ableton-live12-wine-d2d-dcomp-redraw-fixes.patch
+              (known-good-2026-06-30)
+  0002-0003 = nine7nine/wine-nspa-src commits a63120d350 + ec6cc844f0 (winex11 hunks only)
+              + 7e15021e3f (WineHQ bug 57955 fix stack; 0003 includes a hand-fix:
+              winex11 atom enum/name-table order)
+  0004-0026 = local fixes, including GNOME/mutter frame + reentrancy fixes; plugin-editor 
+              native titlebar (0014) + layered-attr sync (0015); dcomp orphan-subclass, 
+              activation timestamp, shared-session-view fixes (0016-0019); sRGB EGL formats
+              (0020); mmdevapi FriendlyName re-wrap fix (0021); dxgi/wined3d dcomp
+              reblit + DPI-context fixes (0022-0025); winex11 DC visual/depth
+              tracking for GL plugin editors (0026).
+  0027      = gitignore housekeeping (untrack local build trees); patch file
+              removed from the shipped series 2026-07-14, commit remains in
+              the tree history.
+  0028      = winealsa MIDI hotplug re-subscribe (2026-07-07), see
+              ABLETON-WINE-MIDI-HOTPLUG.md
+  0029      = win32u menu-bar +4px (2026-07-09): fixes the main-window +56px
+              resize settle at 100% scale (Live models NC as adjust+4), see
+              ABLETON-WINE-DPI-SCALE-100.md
+  0030      = dxgi stale-size dcomp blit gating (2026-07-09): partial fix for
+              the Learn View mangled band, see ABLETON-WINE-LEARNVIEW-FLICKER.md
+              (still open: LAYERED|NOREDIRECTIONBITMAP display path)
+  0031      = comdlg32/shell32 XDG file-dialog portal backend (2026-07-11).
+              Origin: Wine MR !10060 v5, runtime patches 0001 + 0002 + 0003 +
+              0005, plus the responsiveness follow-up used by MusicBee — both
+              written against Wine 11.0. Local adaptation: consolidated into
+              one integration boundary rebased onto this Wine 11.11 tree.
+              Excluded: MR patch 0004 (test-only; its Wine 11.0 test context
+              does not match the evolved 11.11 test file).
+              ABLETON-WINE-FILE-PORTAL.md
+  0032      = x64 helper-scoped host-libusb bridge for the Push 2 display
+              (2026-07-11) with a suite of new new dlls and a libusb-1.0
+              builtin exporting the exact 16-function Win64 libusb 1.0.23 ABI
+              used by Push2DisplayProcess.exe; x86_64-only by design (i386
+              subdir disabled at configure). See ABLETON-WINE-PUSH2-DISPLAY.md
+  0033      = ntdll WINE_DISABLE_UNIX_MOUNT_REPARSE opt-out (2026-07-14).
+              Origin: ENCORE (wowitsjack) patches/encore-wine.patch,
+              dlls/ntdll/unix/file.c hunks, ported unchanged in behavior.
+              With the variable set, Unix mount boundaries stop being
+              reported as IO_REPARSE_TAG_MOUNT_POINT junctions (which carry
+              no FSCTL_GET_REPARSE_POINT data); launchers set it to 1.
+              See ABLETON-WINE-ENCORE-REVIEW.md
+  0034      = winex11 XdndStatus flush (2026-07-14). Origin: ENCORE
+              patches/encore-wine.patch, dlls/winex11.drv/event.c hunk,
+              ported unchanged: flush each XdndStatus reply so a queued
+              XdndLeave from a fast source cannot overtake the acceptance
+              (intermittent refused drops dragging from file managers under
+              Xwayland). See ABLETON-WINE-ENCORE-REVIEW.md

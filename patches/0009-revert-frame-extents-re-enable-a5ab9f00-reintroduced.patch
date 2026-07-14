@@ -1,0 +1,33 @@
+Subject: revert frame-extents re-enable (a5ab9f00): reintroduced
+ strobing white border and did not stop the resize loop; back to disabled
+ baseline for handoff
+
+---
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index 9727669d..20dae46f 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -1718,16 +1718,13 @@ BOOL read_net_frame_extents( Display *display, Window window, long *extents )
+ 
+ void window_net_frame_extents_notify( struct x11drv_win_data *data, const long *extents, BOOL valid )
+ {
+-    /* Frame-extents reconstruction (NSPA 1c): use the WM's real _NET_FRAME_EXTENTS to
+-     * close the window<->visible round-trip exactly, so Live reads back the true frame
+-     * instead of AdjustWindowRect's guess and its window-size feedback loop converges
+-     * (bug 57955). window_rect_from_visible_state expands by the frame and get_visible_rect
+-     * insets by the same frame, so the transform is a consistent identity. */
+-    data->has_frame_extents = valid;
+-    if (valid)
+-        memcpy( data->frame_extents, extents, sizeof(data->frame_extents) );
+-    else
+-        memset( data->frame_extents, 0, sizeof(data->frame_extents) );
++    /* Frame-extents reconstruction DISABLED (reverts a5ab9f00). Re-enabling it converged
++     * Live's window *size* but reintroduced a redrawn white frame border that strobes under
++     * the still-present resize spin, and did NOT stop the resize loop. So it was a net loss.
++     * Back to the disabled baseline (grows regime, no white border, low CPU) — this is the
++     * clean starting point for the resize handoff; see ABLETON-WINE-RESIZE-BUG.md. */
++    data->has_frame_extents = FALSE;
++    memset( data->frame_extents, 0, sizeof(data->frame_extents) );
+ }
+ 
+ 

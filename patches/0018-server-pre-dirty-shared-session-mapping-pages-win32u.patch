@@ -1,0 +1,68 @@
+Subject: server: pre-dirty shared session mapping pages; win32u:
+ fix block match + diagnostics
+
+memset the region in set_session_mapping/grow_session_mapping so every page is a real shmem page before
+clients fault it in. Also match blocks whose start equals the object offset and extend the mismatch warning.
+---
+ dlls/win32u/winstation.c |  9 ++++++---
+ server/mapping.c         | 12 ++++++++++++
+ 2 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/win32u/winstation.c b/dlls/win32u/winstation.c
+index 3da9acdd..64a92419 100644
+--- a/dlls/win32u/winstation.c
++++ b/dlls/win32u/winstation.c
+@@ -153,7 +153,7 @@ static NTSTATUS find_shared_session_block( SIZE_T offset, SIZE_T size, struct se
+ 
+     LIST_FOR_EACH_ENTRY( block, &session_blocks, struct session_block, entry )
+     {
+-        if (block->offset < offset && offset + size <= block->offset + block->size)
++        if (block->offset <= offset && offset + size <= block->offset + block->size)
+         {
+             *ret = block;
+             pthread_mutex_unlock( &session_lock );
+@@ -180,9 +180,12 @@ const shared_object_t *find_shared_session_object( object_id_t id, mem_size_t of
+ 
+     if (id && !(status = find_shared_session_block( offset, sizeof(*object), &block )))
+     {
++        object_id_t read_id;
+         object = (const shared_object_t *)(block->data + offset - block->offset);
+-        if (id == shared_object_get_id( object )) return object;
+-        WARN( "Session object id doesn't match expected id %s\n", wine_dbgstr_longlong(id) );
++        if (id == (read_id = shared_object_get_id( object ))) return object;
++        WARN( "Session object id %s at offset %s doesn't match expected id %s (block data %p offset %s size %s)\n",
++              wine_dbgstr_longlong(read_id), wine_dbgstr_longlong(offset), wine_dbgstr_longlong(id),
++              block->data, wine_dbgstr_longlong(block->offset), wine_dbgstr_longlong(block->size) );
+     }
+ 
+     return NULL;
+diff --git a/server/mapping.c b/server/mapping.c
+index a53b6b68..47337972 100644
+--- a/server/mapping.c
++++ b/server/mapping.c
+@@ -1445,6 +1445,14 @@ void set_session_mapping( struct mapping *mapping )
+         return;
+     }
+ 
++    /* Dirty every page up front: the mapping is a sparse memfd, and reading a
++     * hole through a client's read-only MAP_PRIVATE view faults in the shared
++     * zero page, which never observes pages the server allocates later by
++     * writing (the client then sees permanently-stale zero session objects:
++     * window class registration / window creation fail at random). Writing
++     * allocates real shmem pages so in-place updates stay visible. */
++    memset( tmp, 0, size );
++
+     block->data = tmp;
+     block->offset = 0;
+     block->used_size = sizeof(*shared_session);
+@@ -1477,6 +1485,10 @@ static struct session_block *grow_session_mapping( mem_size_t needed )
+         return NULL;
+     }
+ 
++    /* see set_session_mapping: allocate real shmem pages so client-side
++     * read-only MAP_PRIVATE views never latch the hole zero page */
++    memset( tmp, 0, new_size - old_size );
++
+     block->data = tmp;
+     block->offset = old_size;
+     block->used_size = 0;

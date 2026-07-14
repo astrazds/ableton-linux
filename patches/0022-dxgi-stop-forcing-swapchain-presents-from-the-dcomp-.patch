@@ -1,0 +1,67 @@
+Subject: dxgi: stop forcing swapchain presents from the dcomp
+ reblit timer
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+On reblit-timer ticks, signal frame_latency_event and refresh the window surface from the
+persistent comp buffer instead of forcing a Present; ticks where the app presented on its own do nothing.
+---
+ dlls/dxgi/factory.c | 37 +++++++++++++++++++++++++++++--------
+ 1 file changed, 29 insertions(+), 8 deletions(-)
+
+diff --git a/dlls/dxgi/factory.c b/dlls/dxgi/factory.c
+index 7f96e332..9fd77076 100644
+--- a/dlls/dxgi/factory.c
++++ b/dlls/dxgi/factory.c
+@@ -666,14 +666,34 @@ static LRESULT CALLBACK dcomp_target_wndproc(HWND hwnd, UINT msg, WPARAM wparam,
+ 
+                 if (sc)
+                 {
+-                    /* Present(0,0) without dirty rects.  The expensive GPU
+-                     * readback + StretchBlt is skipped in swapchain_blit_gdi
+-                     * when the composition buffer is already up-to-date
+-                     * (no new rendering since the last Present1).  We still
+-                     * call Present so JUCE's SwapChain event loop gets its
+-                     * frame-ready signal — without it, input events stall. */
+-                    IDXGISwapChain4_Present(sc, 0, 0);
+-
++                    /* Never force a real Present here: every wined3d present
++                     * rotates the flip chain and blits back_buffers[0], which
++                     * the app may not have redrawn since its own last present.
++                     * For WebView2 (Chromium GPU process, Intermediate D3D
++                     * Window) that buffer holds a stale background frame, so a
++                     * timer Present alternated stale/real content at the timer
++                     * period — the Live 12 doc-sidebar flicker.
++                     *
++                     * The Present existed so JUCE's SwapChain event loop gets
++                     * its frame-ready signal while idle (input stalls without
++                     * it).  Signal the frame-latency event directly instead,
++                     * and refresh the window surface from the persistent comp
++                     * buffer (last app-presented frame) — no readback, no
++                     * rotation, no stale content. */
++                    struct d3d11_swapchain *swapchain = d3d11_swapchain_from_IDXGISwapChain4(sc);
++                    LONG count = swapchain->present_count;
++                    LONG last = (LONG)(LONG_PTR)GetPropW(hwnd, L"__wine_dcomp_last_present");
++
++                    if (count == last)
++                    {
++                        /* App idle since the previous tick. */
++                        if (swapchain->frame_latency_event)
++                            SetEvent(swapchain->frame_latency_event);
++                        dcomp_reblit_comp_buffer(hwnd, "timer-idle");
++                    }
++                    /* else: the app is presenting on its own — the window
++                     * surface is already fresh, nothing to do. */
++                    SetPropW(hwnd, L"__wine_dcomp_last_present", (HANDLE)(LONG_PTR)count);
+                 }
+                 else
+                 {
+@@ -732,6 +752,7 @@ static LRESULT CALLBACK dcomp_target_wndproc(HWND hwnd, UINT msg, WPARAM wparam,
+             RemovePropW(hwnd, L"__wine_dcomp_swapchain");
+             RemovePropW(hwnd, L"__wine_dcomp_comp_dc");
+             RemovePropW(hwnd, L"__wine_dcomp_comp_size");
++            RemovePropW(hwnd, L"__wine_dcomp_last_present");
+             return result;
+         }
+     }

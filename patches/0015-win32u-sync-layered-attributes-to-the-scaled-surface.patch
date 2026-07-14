@@ -1,0 +1,33 @@
+Subject: win32u: sync layered attributes to the scaled surface
+ target on every flush
+
+Forward color_key/alpha_bits/alpha_mask to the target driver surface on every scaled-surface
+flush, not only when the window shape changes; unchanged values cost nothing.
+---
+ dlls/win32u/dce.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/win32u/dce.c b/dlls/win32u/dce.c
+index 2a999b83..6755e41c 100644
+--- a/dlls/win32u/dce.c
++++ b/dlls/win32u/dce.c
+@@ -201,11 +201,16 @@ static BOOL scaled_surface_flush( struct window_surface *window_surface, const R
+         HRGN hrgn = map_dpi_region( window_surface->shape_region, surface->dpi_from, surface->dpi_to );
+         window_surface_set_shape( surface->target_surface, hrgn );
+         if (hrgn) NtGdiDeleteObjectApp( hrgn );
+-
+-        window_surface_set_layered( surface->target_surface, window_surface->color_key,
+-                                    window_surface->alpha_bits, window_surface->alpha_mask );
+     }
+ 
++    /* Keep the target surface's layered attributes in sync on every flush, not only on
++     * shape changes: layered windows without a shape (e.g. JUCE popup-menu drop-shadow
++     * windows, per-pixel alpha via UpdateLayeredWindow) otherwise never propagate
++     * alpha_mask to the driver surface, which then composites them as opaque black.
++     * window_surface_set_layered only invalidates the target when a value changed. */
++    window_surface_set_layered( surface->target_surface, window_surface->color_key,
++                                window_surface->alpha_bits, window_surface->alpha_mask );
++
+     window_surface_flush( surface->target_surface );
+     return TRUE;
+ }

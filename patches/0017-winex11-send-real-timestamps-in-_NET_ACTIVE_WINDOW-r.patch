@@ -1,0 +1,76 @@
+Subject: winex11: send real timestamps in _NET_ACTIVE_WINDOW
+ requests and allow retries
+
+Send _NET_ACTIVE_WINDOW requests with the timestamp of the last processed user input (mutter
+drops timestamp-0 requests) and re-send when a newer timestamp is available.
+---
+ dlls/winex11.drv/window.c | 21 ++++++++++++++++++---
+ dlls/winex11.drv/x11drv.h |  1 +
+ 2 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index dad59628..2fc1d147 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -2282,10 +2282,23 @@ void set_net_active_window( HWND hwnd, HWND previous )
+     BOOL withdrawn = FALSE;
+     Window window;
+     XEvent xev;
++    Time time = CurrentTime;
+ 
+     if (!is_net_supported( x11drv_atom(_NET_ACTIVE_WINDOW) )) return;
+     if (!(window = X11DRV_get_whole_window( hwnd ))) return;
+-    if (data->pending_state.net_active_window == window) return;
++
++    /* Use the timestamp of the last user input we processed: mutter's focus-stealing
++     * prevention silently drops activation requests with timestamp 0 (GNOME 50), which
++     * previously deadlocked the request state machine below for the whole session. */
++    if (EVENT_x11_time_to_win32_time( 0 ))
++        time = NtUserGetThreadState( UserThreadStateMessageTime ) - EVENT_x11_time_to_win32_time( 0 );
++
++    /* Skip only exact repeats: if the WM ignored a previous request for this window
++     * (e.g. it carried an older timestamp than the WM's focus-stealing cutoff), a new
++     * user interaction yields a fresh timestamp and must be allowed to retry, else the
++     * window can never be activated again for the rest of the session. */
++    if (data->current_state.net_active_window == window && !data->net_active_window_serial) return;
++    if (data->pending_state.net_active_window == window && time == data->net_active_window_time) return;
+     if (window_set_pending_activate( hwnd, &withdrawn )) return;
+ 
+     xev.xclient.type = ClientMessage;
+@@ -2296,12 +2309,13 @@ void set_net_active_window( HWND hwnd, HWND previous )
+     xev.xclient.send_event = True;
+     xev.xclient.format = 32;
+     xev.xclient.data.l[0] = 2; /* source: pager */
+-    xev.xclient.data.l[1] = 0; /* timestamp */
++    xev.xclient.data.l[1] = time;
+     xev.xclient.data.l[2] = X11DRV_get_whole_window( previous ); /* current active */
+     xev.xclient.data.l[3] = 0;
+     xev.xclient.data.l[4] = 0;
+ 
+     data->net_active_window_serial = NextRequest( data->display );
++    data->net_active_window_time = time;
+ 
+     if (withdrawn)
+     {
+@@ -2312,7 +2326,8 @@ void set_net_active_window( HWND hwnd, HWND previous )
+     }
+     data->pending_state.net_active_window = window;
+ 
+-    TRACE( "requesting _NET_ACTIVE_WINDOW %p/%lx serial %lu\n", hwnd, window, data->net_active_window_serial );
++    TRACE( "requesting _NET_ACTIVE_WINDOW %p/%lx serial %lu time %lu\n", hwnd, window,
++           data->net_active_window_serial, data->net_active_window_time );
+     XSendEvent( data->display, DefaultRootWindow( data->display ), False,
+                 SubstructureRedirectMask | SubstructureNotifyMask, &xev );
+ }
+diff --git a/dlls/winex11.drv/x11drv.h b/dlls/winex11.drv/x11drv.h
+index a74c975d..6f15d022 100644
+--- a/dlls/winex11.drv/x11drv.h
++++ b/dlls/winex11.drv/x11drv.h
+@@ -424,6 +424,7 @@ struct x11drv_thread_data
+     struct display_state pending_state;       /* display state tracking the pending / requested state */
+     struct display_state current_state;       /* display state tracking the current X11 state */
+     unsigned long net_active_window_serial;   /* serial of last pending _NET_ACTIVE_WINDOW request */
++    Time     net_active_window_time;          /* user timestamp of last _NET_ACTIVE_WINDOW request */
+ };
+ 
+ extern struct x11drv_thread_data *x11drv_init_thread_data(void);

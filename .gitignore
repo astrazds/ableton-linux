@@ -1,0 +1,42 @@
+# Build outputs (regenerable; also published as GitHub Release assets).
+# The BUILD-INFO text files stay tracked: they are the provenance record of
+# the verified build this repo's patch series produced.
+/dist/*
+!/dist/BUILD-INFO*.txt
+
+# Local scratch
+*.log
+*.tmp
+# small curated spy outputs/logs in tools/ ARE committed as evidence
+!tools/*.log
+
+# --- Large generated / external trees (NOT tracked) ---
+# Wine prefix snapshots: Ableton install, registry, drive_c (~37G reflinked)
+ableton-prefix-*/
+# Compiled Wine install tree: bin/lib/share (~1.3G build output)
+wine-d2d1-nspa-11.11/
+# Upstream Wine source — its own git repo (~12G)
+wine-d2d1-nspa-src/
+
+# Bulk debug captures (WINEDEBUG traces, tens of MB)
+pteq_win.log
+
+
+# --- Compiled binaries & build artifacts (rebuildable from the .c sources) ---
+*.exe
+*.exe.so
+*.so
+*.dll
+*.o
+# extensionless ELF tools built from matching .c files (live in tools/)
+uclick
+fakectl
+jacklinkd
+xact
+xmon
+xrec
+xtool
+
+# Local safety backups from the 2026-07-05 audio fix
+mmdevapi-backup-2026-07-05/
+prefix-reg-backup-2026-07-05/

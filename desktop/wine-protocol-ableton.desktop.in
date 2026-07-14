@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Ableton Live 12 Suite
+MimeType=x-scheme-handler/ableton;
+Exec=@HOME@/.local/bin/ableton-live %u
+NoDisplay=true
+StartupNotify=true
+Icon=7CC2_Ableton Live 12 Suite.0

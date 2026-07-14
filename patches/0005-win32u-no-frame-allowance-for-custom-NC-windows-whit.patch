@@ -1,0 +1,23 @@
+Subject: win32u: no frame allowance for custom-NC windows (white
+ rim around Live modals)
+
+---
+ dlls/win32u/window.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
+index cc924a93..d325f2eb 100644
+--- a/dlls/win32u/window.c
++++ b/dlls/win32u/window.c
+@@ -1998,6 +1998,11 @@ static RECT get_visible_rect( HWND hwnd, BOOL shaped, UINT style, UINT ex_style,
+ 
+     if (get_present_rect( hwnd, &rect, get_thread_dpi() )) return rect;
+     if (IsRectEmpty( &rects->window ) || shaped || !decorated_mode) return rects->window;
++    /* Custom-NC windows (client == window) are never WM-decorated by us (see winex11
++     * get_mwm_decorations): no frame allowance at all, visible == window. Otherwise the
++     * AdjustWindowRect fallback below inflates the X window by a few pixels around the
++     * app-drawn chrome, leaving a permanently repainted border rim. */
++    if (EqualRect( &rects->window, &rects->client )) return rects->window;
+     if (!user_driver->pGetWindowStyleMasks( hwnd, style, ex_style, &style_mask, &ex_style_mask )) return rects->window;
+     if (!user_driver->pGetFrameExtents( hwnd, &rect ))
+     {

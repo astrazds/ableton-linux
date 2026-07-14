@@ -1,0 +1,7 @@
+start: XGetInputFocus=0x600003 revert=1
+start: _NET_ACTIVE_WINDOW=0x600003
+monitoring 0x4000005 for 6 s...
+ 1002.8  FocusIn  0x4000005 mode=Normal detail=Nonlinear
+ 1022.9  _NET_ACTIVE_WINDOW -> 0x4000005
+ 1025.1  Prop on target: _NET_WM_STATE 
+end: XGetInputFocus=0x4000005

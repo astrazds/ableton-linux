@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Build mousespy.dll + spyhost.exe as real PEs (same method as build_swamprobe.sh).
+set -e
+cd "$(dirname "$0")"
+SRC=~/Projects/Code/ableton/wine-d2d1-nspa-src
+BLD=$SRC/build-wow64
+INC=$SRC/include
+U=$BLD/dlls/user32/x86_64-windows
+K=$BLD/dlls/kernel32/x86_64-windows
+N=$BLD/dlls/ntdll/x86_64-windows
+
+RES=$(clang -print-resource-dir)
+COMMON=(-target x86_64-windows-gnu -fuse-ld=lld --no-default-config
+  -fno-stack-protector -mno-stack-arg-probe -nostdlib -nostdinc
+  -Wall -O2 -isystem "$RES/include" -I "$INC" -I "$INC/msvcrt" -D__WINESRC__)
+
+clang "${COMMON[@]}" -shared -Wl,-e,DllMain \
+  -Wl,--export-all-symbols \
+  -o mousespy.dll mousespy.c \
+  -L "$U" -L "$K" -L "$N" -luser32 -lkernel32 -lntdll
+echo "built mousespy.dll"
+
+clang "${COMMON[@]}" -Wl,--subsystem,console -Wl,-e,mainCRTStartup \
+  -o spyhost.exe spyhost.c \
+  -L "$U" -L "$K" -L "$N" -luser32 -lkernel32 -lntdll
+echo "built spyhost.exe"

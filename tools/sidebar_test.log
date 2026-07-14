@@ -1,0 +1,31 @@
+0024:fixme:dxgi:DXGID3D10CreateDevice Ignoring flags 0x20.
+05a0:fixme:dxgi:DXGID3D10CreateDevice Ignoring flags 0x1.
+05a0:fixme:dxgi:wined3d_swapchain_desc_from_dxgi Ignoring alpha mode 0x1.
+05a0:fixme:d3d:wined3d_swapchain_init Unimplemented swap effect 0x3.
+05a0:fixme:dxgi:dxgi_factory_CreateSwapChainForComposition Created composition window 00000000000301CA (2038x2560) for swapchain 00007FFFFEFF4E00.
+05a0:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 00000000000101C4 client=2038x2560 screen=(5,56)-(2043,2616) parent=0000000000010194 sc=2038x2560.
+05a0:fixme:dxgi:dcomp_swapchain_wndproc DComp: parent 0000000000010194 screen=(5,56)-(269,56).
+05a0:fixme:dxgi:dcomp_swapchain_wndproc DComp popup-detect: target 00000000000101C4 style=0x5c000000 parent=0000000000010194 count=0.
+05a0:fixme:dxgi:dcomp_swapchain_wndproc DComp: subclassed target 00000000000101C4, orig wndproc 00006FFFE09430C0, timer started, sc=00007FFFFEFF4E00.
+05a0:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 00000000000101C4 now 2038x2560, swapchain switched.
+05d0:fixme:d3d:swapchain_blit_gdi Using GDI present.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #1: hwnd 00000000000101C4 2038x2560 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #2: hwnd 00000000000101C4 2038x2560 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #3: hwnd 00000000000101C4 2038x2560 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #4: hwnd 00000000000101C4 2038x2560 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #5: hwnd 00000000000101C4 2038x2560 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_target_wndproc WM_PAINT #1: hwnd 00000000000101C4 2038x2560, comp_dc=0000000002410051.
+05a8:fixme:dxgi:dcomp_target_wndproc WM_PAINT #2: hwnd 00000000000101C4 2038x2560, comp_dc=0000000002410051.
+05a8:fixme:dxgi:dcomp_target_wndproc WM_PAINT #3: hwnd 00000000000101C4 2038x2560, comp_dc=0000000002410051.
+05a8:fixme:dxgi:dcomp_target_wndproc WM_PAINT #4: hwnd 00000000000101C4 2038x2560, comp_dc=0000000002410051.
+05a8:fixme:dxgi:dcomp_target_wndproc WM_PAINT #5: hwnd 00000000000101C4 590x2306, comp_dc=0000000003410051.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #200: hwnd 00000000000101C4 598x2306 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #400: hwnd 00000000000101C4 598x2306 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #600: hwnd 00000000000101C4 598x2306 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #800: hwnd 00000000000101C4 598x2306 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #1000: hwnd 00000000000101C4 598x2306 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #1200: hwnd 00000000000101C4 598x2306 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #1400: hwnd 00000000000101C4 598x2306 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #1600: hwnd 00000000000101C4 598x2306 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #1800: hwnd 00000000000101C4 598x2306 reason=timer-idle.
+05a8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit skipped: hwnd 00000000000101C4 comp_dc=0000000000000000 dims=0 reason=showwindow.

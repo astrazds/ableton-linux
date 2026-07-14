@@ -1,0 +1,47 @@
+Subject: winex11: reconstruct frame extents for tool windows
+ (kill double title bar)
+
+Re-enable _NET_FRAME_EXTENTS reconstruction for WS_EX_TOOLWINDOW windows only,
+so the WM frame absorbs the caption; all other windows stay on the disabled baseline.
+
+---
+ dlls/winex11.drv/window.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
+
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index 33f9e3cb..3178c911 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -1724,13 +1724,25 @@ BOOL read_net_frame_extents( Display *display, Window window, long *extents )
+ 
+ void window_net_frame_extents_notify( struct x11drv_win_data *data, const long *extents, BOOL valid )
+ {
+-    /* Frame-extents reconstruction DISABLED (reverts a5ab9f00). Re-enabling it converged
+-     * Live's window *size* but reintroduced a redrawn white frame border that strobes under
+-     * the still-present resize spin, and did NOT stop the resize loop. So it was a net loss.
+-     * Back to the disabled baseline (grows regime, no white border, low CPU) — this is the
+-     * clean starting point for the resize handoff; see ABLETON-WINE-RESIZE-BUG.md. */
+-    data->has_frame_extents = FALSE;
+-    memset( data->frame_extents, 0, sizeof(data->frame_extents) );
++    /* Frame-extents reconstruction is globally OFF (360accff): re-enabling it on the main
++     * window strobed under the (now IFEO-fixed) resize spin. But WS_EX_TOOLWINDOW windows
++     * (Ableton's VST plugin editors) now request WM decorations (get_mwm_decorations_for_style),
++     * and with frame-extents OFF the WM frame and Wine's own Win32 caption BOTH paint -> a
++     * double title bar. Re-enable reconstruction ONLY for tool windows so the real WM frame
++     * absorbs the caption (visible == client) and a single native GNOME title bar is drawn.
++     * The custom-NC main window is not a tool window, so it stays on the disabled baseline. */
++    DWORD ex_style = NtUserGetWindowLongW( data->hwnd, GWL_EXSTYLE );
++    if (!(ex_style & WS_EX_TOOLWINDOW))
++    {
++        data->has_frame_extents = FALSE;
++        memset( data->frame_extents, 0, sizeof(data->frame_extents) );
++        return;
++    }
++    data->has_frame_extents = valid;
++    if (valid)
++        memcpy( data->frame_extents, extents, sizeof(data->frame_extents) );
++    else
++        memset( data->frame_extents, 0, sizeof(data->frame_extents) );
+ }
+ 
+ 

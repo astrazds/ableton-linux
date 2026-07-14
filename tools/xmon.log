@@ -1,0 +1,4 @@
+start: XGetInputFocus=0x600003 revert=1
+start: _NET_ACTIVE_WINDOW=0x600003
+monitoring 0x4000005 for 10 s...
+end: XGetInputFocus=0x600003

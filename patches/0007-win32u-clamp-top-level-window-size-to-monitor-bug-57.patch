@@ -1,0 +1,36 @@
+Subject: win32u: clamp top-level window size to monitor
+ (bug-57955 anti-growth; size-only, small-overshoot only)
+
+---
+ dlls/win32u/window.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
+index d325f2eb..c30a88c9 100644
+--- a/dlls/win32u/window.c
++++ b/dlls/win32u/window.c
+@@ -4123,6 +4123,24 @@ BOOL WINAPI NtUserSetWindowPos( HWND hwnd, HWND after, INT x, INT y, INT cx, INT
+     winpos.cy = cy;
+     winpos.flags = flags;
+ 
++    /* Bug-57955 anti-growth clamp (Ableton Live on this patched Wine at high DPI):
++     * Live's own resize handler drives the outer window a few pixels larger on every
++     * relayout, overshooting the monitor and never converging (observed: +2px/cycle,
++     * 4096 -> 4108 -> ... forever). Cap a top-level window's requested size to its
++     * monitor, but only when the overshoot is small (the feedback signature) so a
++     * deliberately large resize (e.g. spanning monitors) is left untouched. Size-only:
++     * position and frame geometry are never altered, so the native window feel and any
++     * normal sub-monitor size are unaffected. Done in the app-facing entry (before DPI
++     * mapping) so cx/cy and the monitor rect share the same get_thread_dpi() space. */
++    if (!(flags & SWP_NOSIZE) && !(get_window_long( winpos.hwnd, GWL_STYLE ) & WS_CHILD))
++    {
++        MONITORINFO mi = monitor_info_from_window( winpos.hwnd, MONITOR_DEFAULTTONEAREST );
++        LONG mw = mi.rcMonitor.right - mi.rcMonitor.left;
++        LONG mh = mi.rcMonitor.bottom - mi.rcMonitor.top;
++        if (mw > 0 && winpos.cx > mw && winpos.cx <= mw + 256) winpos.cx = mw;
++        if (mh > 0 && winpos.cy > mh && winpos.cy <= mh + 256) winpos.cy = mh;
++    }
++
+     map_dpi_winpos( &winpos );
+ 
+     if (is_current_thread_window( hwnd ))

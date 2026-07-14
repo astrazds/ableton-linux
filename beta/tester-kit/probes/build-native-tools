@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Build optional host-side diagnostics against the tester's own distribution.
+set -uo pipefail
+
+here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+core_source="$here/src"
+source_dir="$here/advanced/src"
+output_dir="${1:-$here/advanced/native}"
+compiler="${CC:-cc}"
+results="$output_dir/build-results.txt"
+
+mkdir -p "$output_dir"
+: > "$results"
+
+build() {
+    local name="$1"
+    local source="$2"
+    shift 2
+    local log="$output_dir/$name.build.log"
+
+    if "$compiler" -O2 -Wall -Wextra -o "$output_dir/$name" "$source" "$@" >"$log" 2>&1; then
+        printf 'PASS %s\n' "$name" | tee -a "$results"
+        rm -f "$log"
+    else
+        printf 'SKIP %s, see %s\n' "$name" "$log" | tee -a "$results"
+    fi
+}
+
+if ! command -v "$compiler" >/dev/null 2>&1; then
+    printf 'No C compiler found: %s\n' "$compiler" | tee -a "$results"
+    exit 69
+fi
+
+build fakectl "$core_source/fakectl.c" -lasound
+build jacklinkd "$source_dir/jacklinkd.c" -ljack -lpthread
+build uclick "$source_dir/uclick.c"
+build xact "$source_dir/xact.c" -lX11
+build xdmg "$source_dir/xdmg.c" -lX11 -lXdamage -lXfixes
+build xgrid "$source_dir/xgrid.c" -lX11
+build xmon "$source_dir/xmon.c" -lX11
+build xrec "$source_dir/xrec.c" -lX11 -lXtst
+build xsamp "$source_dir/xsamp.c" -lX11
+build xsettle "$source_dir/xsettle.c" -lX11
+build xtool "$source_dir/xtool.c" -lX11 -lXtst
+
+printf '\nBuild summary: %s\n' "$results"

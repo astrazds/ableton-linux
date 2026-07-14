@@ -1,0 +1,7 @@
+live main hwnd: 00000000000100A4
+window rect (596,270)-(1804,1012) 1208x742
+client 1200x689 -> NC total v 53 h 8
+SM_CYMENU 19 SM_CYCAPTION 26 SM_CYSIZEFRAME 4 SM_CXPADDEDBORDER 0
+GetMenuBarInfo failed 0
+menu 00000000000100AA
+items: -1

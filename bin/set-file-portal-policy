@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+policy="${1:-auto}"
+
+case "$policy" in
+    auto|always|never) ;;
+    *)
+        echo "Usage: $0 [auto|always|never]" >&2
+        exit 64
+        ;;
+esac
+
+if pgrep -af 'Ableton Live 12 Suite[.]exe' 2>/dev/null | grep -q 'ProgramData'; then
+    echo "Ableton Live is running; close it before changing portal policy." >&2
+    exit 75
+fi
+
+"$project_root/bin/ableton-wine-portal" reg add \
+    'HKCU\Software\Wine\X11 Driver' \
+    /v FileDialogPortal /t REG_SZ /d "$policy" /f
+
+echo "Ableton portal file-dialog policy: $policy"

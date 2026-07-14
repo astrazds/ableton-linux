@@ -1,0 +1,7 @@
+SetProcessDpiAwarenessContext(PMv2) -> 1
+owner hwnd=00000000000301F2
+WM_ENTERMENULOOP
+menu window 00000000000201D2 visible rect=(500,500)-(673,599)
+WM_TIMER: visible menu windows: 1
+WM_EXITMENULOOP
+TrackPopupMenu returned 0 lasterr=0 menu_windows_seen=1

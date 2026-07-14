@@ -1,0 +1,7 @@
+RECORD 1.13
+  1750.2  REQ SetInputFocus win=0x600003 time=2506162 revert=1
+  3636.0  REQ SetInputFocus win=0x600003 time=2508058 revert=1
+  4586.5  REQ SetInputFocus win=0x600003 time=2509007 revert=1
+  4722.5  REQ SetInputFocus win=0x600003 time=2509135 revert=1
+  4737.7  REQ SetInputFocus win=0x600003 time=2509149 revert=1
+  4738.0  REQ SetInputFocus win=0x600003 time=2509164 revert=1

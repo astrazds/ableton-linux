@@ -1,0 +1,76 @@
+Push 2 host-libusb preflight
+Date: 2026-07-11
+Scope: native Linux host path only; no Wine bridge or display OUT traffic
+
+Safety interlock
+----------------
+
+- No Ableton Live, Push2DisplayProcess, Wine, wineserver, winedevice, or other
+  process held the USB device or raw MIDI node.
+- Interface 0 had no kernel driver.
+- Interfaces 1 and 2 used snd-usb-audio.
+- The probe did not detach drivers, change configuration, reset the device, or
+  send data to endpoint 0x01.
+
+Build identity
+--------------
+
+Source: push2usb.c
+Source SHA-256: f7eb179823f708dc8ecbb12b4336376a907954ef70c35e7926bd6ea0625297c1
+Tested binary: /tmp/push2usb
+Binary SHA-256: 62f7e799c52e2af14ebcb59e7f401b7fc7f7ad5726bb63a30efe9c4f21696598
+Binary type: ELF 64-bit LSB PIE, x86-64
+Compiler: GCC 16.1.1
+Host libusb: 1.0.30, libusb-1.0.so.0
+
+The source compiled without diagnostics under GCC and Clang with:
+
+  -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror
+
+GCC -fanalyzer also completed without diagnostics.
+
+Connected-device result
+-----------------------
+
+Enumeration:
+
+  device=2982:1967 bus=003 address=006 configurations=1
+  interface=0 class=vendor endpoints=in:0x81,out:0x01 packet=512
+
+Two consecutive claim/release runs:
+
+  claim=ok interface=0 kernel-driver=none
+  release=ok interface=0
+  claim=ok interface=0 kernel-driver=none
+  release=ok interface=0
+
+Immediate asynchronous IN cancellation:
+
+  claim=ok interface=0 kernel-driver=none
+  cancel-callback count=1 status=cancelled actual_length=0
+  cancel-test=ok
+  release=ok interface=0
+
+Every probe process exited with status 0.
+
+Postcondition
+-------------
+
+ALSA still exposed both ports:
+
+  IO  hw:2,0,0  Ableton Push 2 Live Port
+  IO  hw:2,0,1  Ableton Push 2 User Port
+
+USB driver ownership remained:
+
+  interface 0  Vendor Specific Class  Driver=[none]
+  interface 1  Audio                  Driver=snd-usb-audio
+  interface 2  Audio                  Driver=snd-usb-audio
+
+Conclusion
+----------
+
+The host can enumerate the Push 2, claim and cleanly release display interface
+0, and complete the tested submit/immediate-cancel callback path without
+disturbing the MIDI interfaces. This record does not test a replacement
+libusb-1.0.dll, Wine PE/Unix marshalling, or display frame output.

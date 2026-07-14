@@ -1,0 +1,51 @@
+Subject: NSPA 1a+1b (57955 visible-rect + decoration gates)
+
+---
+ dlls/win32u/window.c      | 7 ++++++-
+ dlls/winex11.drv/window.c | 7 +++++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
+index 96a04bbe..7825a95f 100644
+--- a/dlls/win32u/window.c
++++ b/dlls/win32u/window.c
+@@ -1997,8 +1997,13 @@ static RECT get_visible_rect( HWND hwnd, BOOL shaped, UINT style, UINT ex_style,
+     RECT visible_rect, rect = {0};
+ 
+     if (get_present_rect( hwnd, &rect, get_thread_dpi() )) return rect;
+-    if (IsRectEmpty( &rects->window ) || EqualRect( &rects->window, &rects->client ) || shaped || !decorated_mode) return rects->window;
++    if (IsRectEmpty( &rects->window ) || shaped || !decorated_mode) return rects->window;
+     if (!user_driver->pGetWindowStyleMasks( hwnd, style, ex_style, &style_mask, &ex_style_mask )) return rects->window;
++    /* NSPA: Move the window==client check AFTER GetWindowStyleMasks.  Apps that handle
++     * WM_NCCALCSIZE to set client == window (custom NC rendering, e.g. Ableton Live)
++     * still need decoration masking when the WM provides decorations.  Without this,
++     * visible == window, and the configure feedback loop causes 4px/frame growth. */
++    if (EqualRect( &rects->window, &rects->client ) && !style_mask && !ex_style_mask) return rects->window;
+     if (!NtUserAdjustWindowRect( &rect, style & style_mask, FALSE, ex_style & ex_style_mask, dpi )) return rects->window;
+ 
+     visible_rect = rects->window;
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index b126802c..c271491f 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -501,7 +501,6 @@ static unsigned long get_mwm_decorations_for_style( DWORD style, DWORD ex_style
+     unsigned long ret = 0;
+ 
+     if (ex_style & WS_EX_TOOLWINDOW) return 0;
+-    if (ex_style & WS_EX_LAYERED) return 0;
+ 
+     if ((style & WS_CAPTION) == WS_CAPTION)
+     {
+@@ -519,7 +518,11 @@ static unsigned long get_mwm_decorations_for_style( DWORD style, DWORD ex_style
+  */
+ static unsigned long get_mwm_decorations( struct x11drv_win_data *data, DWORD style, DWORD ex_style )
+ {
+-    if (EqualRect( &data->rects.window, &data->rects.visible )) return 0;
++    /* NSPA: Don't gate MWM decorations on window == visible.  The visible
++     * rect may not yet reflect the decoration offset (bootstrap / visual
++     * change), causing the WM to never see decoration hints.  The style
++     * check in get_mwm_decorations_for_style is sufficient. */
++    if (!data->managed) return 0;
+     return get_mwm_decorations_for_style( style, ex_style );
+ }
+ 

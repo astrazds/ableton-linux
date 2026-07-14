@@ -1,0 +1,87 @@
+Subject: opengl: advertise and honor sRGB-capable pixel formats
+ on the EGL backend
+
+Report framebuffer_srgb_capable for 8-bit RGB formats when the EGL display supports EGL_KHR_gl_colorspace;
+create X11 EGL window surfaces with EGL_GL_COLORSPACE_SRGB_KHR, falling back if the driver rejects it.
+---
+ dlls/win32u/opengl.c         | 13 +++++++++++--
+ dlls/winex11.drv/opengl.c    | 22 ++++++++++++++++++++--
+ include/wine/opengl_driver.h |  1 +
+ 3 files changed, 32 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/win32u/opengl.c b/dlls/win32u/opengl.c
+index 3d03b41f..a96cefe7 100644
+--- a/dlls/win32u/opengl.c
++++ b/dlls/win32u/opengl.c
+@@ -637,8 +637,16 @@ static BOOL describe_egl_config( EGLConfig config, struct wgl_pixel_format *fmt,
+     fmt->bind_to_texture_rectangle_rgb = GL_TRUE;
+     fmt->bind_to_texture_rectangle_rgba = GL_TRUE;
+ 
+-    /* TODO: Support SRGB surfaces and enable the attribute */
+-    fmt->framebuffer_srgb_capable = GL_FALSE;
++    /* sRGB encoding on window surfaces works when the EGL display supports
++     * EGL_KHR_gl_colorspace (surfaces are then created with the sRGB
++     * colorspace; GL only actually encodes while GL_FRAMEBUFFER_SRGB is
++     * enabled, so this is inert for apps that don't use it). Not advertising
++     * it makes wglChoosePixelFormatARB return NO formats for apps that
++     * require WGL_FRAMEBUFFER_SRGB_CAPABLE (e.g. Rust baseview plugin GUIs,
++     * which then crash their host). Restrict to 8-bit RGB formats where the
++     * sRGB colorspace is universally supported. */
++    fmt->framebuffer_srgb_capable = egl->has_EGL_KHR_gl_colorspace &&
++                                    pfd->cRedBits == 8 && pfd->cGreenBits == 8 && pfd->cBlueBits == 8;
+ 
+     fmt->float_components = GL_FALSE;
+ 
+@@ -965,6 +973,7 @@ static BOOL init_egl_platform( struct egl_platform *egl, const struct opengl_fun
+ 
+     egl->has_EGL_EXT_present_opaque = has_extension( extensions, "EGL_EXT_present_opaque" );
+     egl->has_EGL_EXT_pixel_format_float = has_extension( extensions, "EGL_EXT_pixel_format_float" );
++    egl->has_EGL_KHR_gl_colorspace = has_extension( extensions, "EGL_KHR_gl_colorspace" );
+     return TRUE;
+ }
+ 
+diff --git a/dlls/winex11.drv/opengl.c b/dlls/winex11.drv/opengl.c
+index 56c22ab7..af1cbaa9 100644
+--- a/dlls/winex11.drv/opengl.c
++++ b/dlls/winex11.drv/opengl.c
+@@ -537,8 +537,26 @@ static BOOL x11drv_egl_surface_create( HWND hwnd, int format, struct opengl_draw
+     opengl_drawable_map_buffer( &gl->base, GL_FRONT_AND_BACK, GL_BACK );
+     if (gl->base.stereo) opengl_drawable_map_buffer( &gl->base, GL_FRONT_RIGHT, GL_BACK_RIGHT );
+ 
+-    if (!(gl->base.surface = funcs->p_eglCreateWindowSurface( egl->display, egl_config_for_format( format ),
+-                                                              (void *)window, NULL )))
++    /* Create the surface with the sRGB colorspace when available: GL only
++     * encodes while GL_FRAMEBUFFER_SRGB is enabled, so this is inert for
++     * apps that don't use it, but it makes the WGL_FRAMEBUFFER_SRGB_CAPABLE
++     * attribute we advertise actually work. Fall back to default colorspace
++     * if the driver rejects the combination for this config. */
++    {
++#ifndef EGL_GL_COLORSPACE_KHR
++#define EGL_GL_COLORSPACE_KHR 0x309D
++#define EGL_GL_COLORSPACE_SRGB_KHR 0x3089
++#endif
++        const EGLint srgb_attribs[] = { EGL_GL_COLORSPACE_KHR, EGL_GL_COLORSPACE_SRGB_KHR, EGL_NONE };
++        gl->base.surface = NULL;
++        if (egl->has_EGL_KHR_gl_colorspace)
++            gl->base.surface = funcs->p_eglCreateWindowSurface( egl->display, egl_config_for_format( format ),
++                                                                (void *)window, srgb_attribs );
++        if (!gl->base.surface)
++            gl->base.surface = funcs->p_eglCreateWindowSurface( egl->display, egl_config_for_format( format ),
++                                                                (void *)window, NULL );
++    }
++    if (!gl->base.surface)
+     {
+         opengl_drawable_release( &gl->base );
+         return FALSE;
+diff --git a/include/wine/opengl_driver.h b/include/wine/opengl_driver.h
+index af745e03..27059c07 100644
+--- a/include/wine/opengl_driver.h
++++ b/include/wine/opengl_driver.h
+@@ -168,6 +168,7 @@ struct egl_platform
+     EGLConfig           *configs;
+     BOOL                 has_EGL_EXT_present_opaque;
+     BOOL                 has_EGL_EXT_pixel_format_float;
++    BOOL                 has_EGL_KHR_gl_colorspace;
+ 
+     /* WGL_WINE_query_renderer info */
+     UINT                 device_id;

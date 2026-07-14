@@ -1,0 +1,99 @@
+Subject: dxgi: suspend dcomp reblits for abandoned swapchains
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Count consecutive idle ticks per target; after DCOMP_STALE_TICKS (3s) skip comp-buffer blits and forward
+WM_PAINT to the original wndproc. frame_latency_event keeps firing; a new present resets the counter.
+
+---
+ dlls/dxgi/factory.c | 45 +++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 41 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/dxgi/factory.c b/dlls/dxgi/factory.c
+index 9fd77076..0b0b8ba8 100644
+--- a/dlls/dxgi/factory.c
++++ b/dlls/dxgi/factory.c
+@@ -381,6 +381,14 @@ static void STDMETHODCALLTYPE dxgi_factory_UnregisterOcclusionStatus(IWineDXGIFa
+ #define WM_WINE_DCOMP_SET_TARGET (WM_USER + 0x100)
+ #define WM_WINE_DCOMP_SET_CHILD_MODE (WM_USER + 0x101)
+ 
++/* Consecutive idle reblit-timer ticks (200ms each) after which a dcomp target
++ * swapchain is considered abandoned: the app stopped presenting and paints the
++ * window by other means (WebView2's Chromium switches to layered/GDI painting
++ * after the initial loads). Re-blitting the comp snapshot then overpaints live
++ * content with a fossilized frame (Learn-View sidebar 200ms gray flashes).
++ * Presenting again resets the counter and re-enables the reblit machinery. */
++#define DCOMP_STALE_TICKS 15
++
+ static inline struct d3d11_swapchain *d3d11_swapchain_from_IDXGISwapChain4(IDXGISwapChain4 *iface)
+ {
+     return CONTAINING_RECORD(iface, struct d3d11_swapchain, IDXGISwapChain4_iface);
+@@ -397,6 +405,12 @@ static void dcomp_reblit_comp_buffer(HWND hwnd, const char *reason)
+     HDC comp_dc = (HDC)GetPropW(hwnd, L"__wine_dcomp_comp_dc");
+     LPARAM dims = (LPARAM)GetPropW(hwnd, L"__wine_dcomp_comp_size");
+ 
++    /* Abandoned swapchain (idle >= DCOMP_STALE_TICKS): the comp buffer is a
++     * stale snapshot; blitting it would overpaint the app's live (non-dcomp)
++     * painting. Covers the focus/windowpos event reblits as well. */
++    if ((LONG)(LONG_PTR)GetPropW(hwnd, L"__wine_dcomp_idle_ticks") >= DCOMP_STALE_TICKS)
++        return;
++
+     if (comp_dc && dims)
+     {
+         unsigned int w = LOWORD(dims);
+@@ -632,6 +646,12 @@ static LRESULT CALLBACK dcomp_target_wndproc(HWND hwnd, UINT msg, WPARAM wparam,
+             HDC comp_dc = (HDC)GetPropW(hwnd, L"__wine_dcomp_comp_dc");
+             LPARAM dims = (LPARAM)GetPropW(hwnd, L"__wine_dcomp_comp_size");
+ 
++            /* Stale swapchain (see DCOMP_STALE_TICKS): let the app's own
++             * wndproc paint — the comp snapshot is a fossil by now. */
++            if ((LONG)(LONG_PTR)GetPropW(hwnd, L"__wine_dcomp_idle_ticks") >= DCOMP_STALE_TICKS)
++                return orig ? CallWindowProcW(orig, hwnd, msg, wparam, lparam)
++                            : DefWindowProcW(hwnd, msg, wparam, lparam);
++
+             BeginPaint(hwnd, &ps);
+             if (comp_dc && dims)
+             {
+@@ -686,13 +706,29 @@ static LRESULT CALLBACK dcomp_target_wndproc(HWND hwnd, UINT msg, WPARAM wparam,
+ 
+                     if (count == last)
+                     {
+-                        /* App idle since the previous tick. */
++                        /* App idle since the previous tick. Always signal the
++                         * frame-latency event (JUCE's swapchain event loop
++                         * stalls input without it), but stop re-blitting once
++                         * the swapchain has been idle long enough to be
++                         * considered abandoned — the comp buffer then holds a
++                         * stale snapshot that would overpaint whatever the app
++                         * paints through non-dcomp means. */
++                        LONG idle = (LONG)(LONG_PTR)GetPropW(hwnd, L"__wine_dcomp_idle_ticks") + 1;
++                        SetPropW(hwnd, L"__wine_dcomp_idle_ticks", (HANDLE)(LONG_PTR)idle);
+                         if (swapchain->frame_latency_event)
+                             SetEvent(swapchain->frame_latency_event);
+-                        dcomp_reblit_comp_buffer(hwnd, "timer-idle");
++                        if (idle < DCOMP_STALE_TICKS)
++                            dcomp_reblit_comp_buffer(hwnd, "timer-idle");
++                        else if (idle == DCOMP_STALE_TICKS)
++                            FIXME("DComp: target %p idle for %d ticks, reblit suspended until next present.\n",
++                                    hwnd, DCOMP_STALE_TICKS);
++                    }
++                    else
++                    {
++                        /* The app is presenting on its own — the window
++                         * surface is already fresh, nothing to do. */
++                        RemovePropW(hwnd, L"__wine_dcomp_idle_ticks");
+                     }
+-                    /* else: the app is presenting on its own — the window
+-                     * surface is already fresh, nothing to do. */
+                     SetPropW(hwnd, L"__wine_dcomp_last_present", (HANDLE)(LONG_PTR)count);
+                 }
+                 else
+@@ -753,6 +789,7 @@ static LRESULT CALLBACK dcomp_target_wndproc(HWND hwnd, UINT msg, WPARAM wparam,
+             RemovePropW(hwnd, L"__wine_dcomp_comp_dc");
+             RemovePropW(hwnd, L"__wine_dcomp_comp_size");
+             RemovePropW(hwnd, L"__wine_dcomp_last_present");
++            RemovePropW(hwnd, L"__wine_dcomp_idle_ticks");
+             return result;
+         }
+     }

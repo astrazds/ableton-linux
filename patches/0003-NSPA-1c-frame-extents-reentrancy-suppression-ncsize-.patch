@@ -1,0 +1,462 @@
+Subject: NSPA 1c: frame extents, reentrancy suppression, ncsize
+ guard (atom order fixed)
+
+---
+ dlls/win32u/defwnd.c           | 18 +++++--
+ dlls/win32u/driver.c           |  6 +++
+ dlls/win32u/window.c           | 95 +++++++++++++++++++++++++++++++---
+ dlls/winex11.drv/event.c       | 14 +++++
+ dlls/winex11.drv/init.c        |  1 +
+ dlls/winex11.drv/window.c      | 82 ++++++++++++++++++++++++++---
+ dlls/winex11.drv/x11drv.h      |  6 +++
+ dlls/winex11.drv/x11drv_main.c |  1 +
+ include/wine/gdi_driver.h      |  1 +
+ 9 files changed, 205 insertions(+), 19 deletions(-)
+
+diff --git a/dlls/win32u/defwnd.c b/dlls/win32u/defwnd.c
+index 5951374f..6e088b4f 100644
+--- a/dlls/win32u/defwnd.c
++++ b/dlls/win32u/defwnd.c
+@@ -1878,13 +1878,21 @@ static void handle_nc_calc_size( HWND hwnd, WPARAM wparam, RECT *win_rect )
+         win_rect->right  -= rect.right;
+         win_rect->bottom -= rect.bottom;
+ 
+-        if (((style & (WS_CHILD | WS_POPUP)) != WS_CHILD) && get_menu( hwnd ))
++        if ((style & (WS_CHILD | WS_POPUP)) != WS_CHILD)
+         {
+-            TRACE( "getting menu bar height with hwnd %p, width %d, at (%d, %d)\n",
+-                   hwnd, win_rect->right - win_rect->left, -rect.left, -rect.top );
++            HMENU menu = get_menu( hwnd );
+ 
+-            win_rect->top += get_menu_bar_height( hwnd, win_rect->right - win_rect->left,
+-                                                  -rect.left, -rect.top );
++            if (menu)
++            {
++                UINT menu_height;
++
++                TRACE( "getting menu bar height with hwnd %p, width %d, at (%d, %d)\n",
++                       hwnd, win_rect->right - win_rect->left, -rect.left, -rect.top );
++
++                menu_height = get_menu_bar_height( hwnd, win_rect->right - win_rect->left,
++                                                   -rect.left, -rect.top );
++                win_rect->top += menu_height;
++            }
+         }
+ 
+         if (ex_style & WS_EX_CLIENTEDGE)
+diff --git a/dlls/win32u/driver.c b/dlls/win32u/driver.c
+index c7a78cd3..3eed84aa 100644
+--- a/dlls/win32u/driver.c
++++ b/dlls/win32u/driver.c
+@@ -874,6 +874,11 @@ static BOOL nulldrv_GetWindowStyleMasks( HWND hwnd, UINT style, UINT ex_style, U
+     return FALSE;
+ }
+ 
++static BOOL nulldrv_GetFrameExtents( HWND hwnd, RECT *frame_rect )
++{
++    return FALSE;
++}
++
+ static BOOL nulldrv_GetWindowStateUpdates( HWND hwnd, UINT *state_cmd, UINT *swp_flags, RECT *rect, HWND *foreground )
+ {
+     return FALSE;
+@@ -1301,6 +1306,7 @@ static const struct user_driver_funcs lazy_load_driver =
+     nulldrv_WindowMessage,
+     nulldrv_WindowPosChanging,
+     nulldrv_GetWindowStyleMasks,
++    nulldrv_GetFrameExtents,
+     nulldrv_GetWindowStateUpdates,
+     nulldrv_CreateWindowSurface,
+     nulldrv_MoveWindowBits,
+diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
+index 7825a95f..384682b1 100644
+--- a/dlls/win32u/window.c
++++ b/dlls/win32u/window.c
+@@ -54,6 +54,9 @@ static void *client_objects[MAX_USER_HANDLES];
+ 
+ static volatile unsigned int startup_info_flags;
+ static unsigned int startup_show_window;
++static DWORD reentrant_wpchanged_thread;
++static HWND reentrant_wpchanged_hwnd;
++static UINT reentrant_wpchanged_depth;
+ 
+ static unsigned int set_startup_info_flags( unsigned int mask, unsigned int flags )
+ {
+@@ -1999,12 +2002,12 @@ static RECT get_visible_rect( HWND hwnd, BOOL shaped, UINT style, UINT ex_style,
+     if (get_present_rect( hwnd, &rect, get_thread_dpi() )) return rect;
+     if (IsRectEmpty( &rects->window ) || shaped || !decorated_mode) return rects->window;
+     if (!user_driver->pGetWindowStyleMasks( hwnd, style, ex_style, &style_mask, &ex_style_mask )) return rects->window;
+-    /* NSPA: Move the window==client check AFTER GetWindowStyleMasks.  Apps that handle
+-     * WM_NCCALCSIZE to set client == window (custom NC rendering, e.g. Ableton Live)
+-     * still need decoration masking when the WM provides decorations.  Without this,
+-     * visible == window, and the configure feedback loop causes 4px/frame growth. */
+-    if (EqualRect( &rects->window, &rects->client ) && !style_mask && !ex_style_mask) return rects->window;
+-    if (!NtUserAdjustWindowRect( &rect, style & style_mask, FALSE, ex_style & ex_style_mask, dpi )) return rects->window;
++    if (!user_driver->pGetFrameExtents( hwnd, &rect ))
++    {
++        if (EqualRect( &rects->window, &rects->client ) && !style_mask && !ex_style_mask) return rects->window;
++        if (!NtUserAdjustWindowRect( &rect, style & style_mask, FALSE, ex_style & ex_style_mask, dpi ))
++            return rects->window;
++    }
+ 
+     visible_rect = rects->window;
+     visible_rect.left   -= rect.left;
+@@ -2165,6 +2168,30 @@ static BOOL is_fullscreen( const MONITORINFO *info, const RECT *rect )
+            rect->top <= info->rcMonitor.top && rect->bottom >= info->rcMonitor.bottom;
+ }
+ 
++static void invalidate_exposed_client_area( HWND hwnd, const struct window_rects *new_rects, const RECT *valid_rect )
++{
++    HRGN client_rgn, valid_rgn;
++
++    if (EqualRect( valid_rect, &new_rects->client )) return;
++
++    client_rgn = NtGdiCreateRectRgn( 0, 0,
++                                     new_rects->client.right - new_rects->client.left,
++                                     new_rects->client.bottom - new_rects->client.top );
++    valid_rgn = NtGdiCreateRectRgn( valid_rect->left - new_rects->client.left,
++                                    valid_rect->top - new_rects->client.top,
++                                    valid_rect->right - new_rects->client.left,
++                                    valid_rect->bottom - new_rects->client.top );
++
++    if (client_rgn && valid_rgn)
++    {
++        if (NtGdiCombineRgn( client_rgn, client_rgn, valid_rgn, RGN_DIFF ) > NULLREGION)
++            NtUserRedrawWindow( hwnd, NULL, client_rgn, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN );
++    }
++
++    if (valid_rgn) NtGdiDeleteObjectApp( valid_rgn );
++    if (client_rgn) NtGdiDeleteObjectApp( client_rgn );
++}
++
+ /***********************************************************************
+  *           apply_window_pos
+  *
+@@ -2339,6 +2366,8 @@ static BOOL apply_window_pos( HWND hwnd, HWND insert_after, UINT swp_flags, stru
+             }
+         }
+ 
++        if (valid_rects) invalidate_exposed_client_area( hwnd, new_rects, &valid_rects[0] );
++
+         if (need_icons && (icon = get_window_icon_info( hwnd, ICON_BIG, icon, &ii )))
+         {
+             icon_small = get_window_icon_info( hwnd, ICON_SMALL, icon_small, &ii_small );
+@@ -3623,14 +3652,16 @@ static UINT calc_ncsize( WINDOWPOS *winpos, const struct window_rects *old_rects
+     if ((winpos->flags & (SWP_FRAMECHANGED | SWP_NOSIZE)) != SWP_NOSIZE)
+     {
+         NCCALCSIZE_PARAMS params;
++        NCCALCSIZE_PARAMS default_params;
+         WINDOWPOS winposCopy;
+-        UINT class_style;
++        UINT class_style, style, class_wvr_flags;
+ 
+         params.rgrc[0] = new_rects->window;
+         params.rgrc[1] = old_rects->window;
+         params.rgrc[2] = old_rects->client;
+         params.lppos = &winposCopy;
+         winposCopy = *winpos;
++        default_params = params;
+ 
+         if (winpos->flags & SWP_NOMOVE)
+         {
+@@ -3647,9 +3678,31 @@ static UINT calc_ncsize( WINDOWPOS *winpos, const struct window_rects *old_rects
+         class_style = get_class_long( winpos->hwnd, GCL_STYLE, FALSE );
+         if (class_style & CS_VREDRAW) wvr_flags |= WVR_VREDRAW;
+         if (class_style & CS_HREDRAW) wvr_flags |= WVR_HREDRAW;
++        class_wvr_flags = wvr_flags;
+ 
+         wvr_flags |= send_message( winpos->hwnd, WM_NCCALCSIZE, TRUE, (LPARAM)&params );
+ 
++        style = get_window_long( winpos->hwnd, GWL_STYLE );
++        /* Preserve the default non-client layout when a decorated menu window
++         * temporarily reports a client rect covering the whole window. */
++        if (!(style & WS_CHILD) &&
++            !(winpos->flags & SWP_FRAMECHANGED) &&
++            get_menu( winpos->hwnd ) &&
++            !EqualRect( &old_rects->client, &old_rects->window ) &&
++            EqualRect( &params.rgrc[0], &new_rects->window ))
++        {
++            UINT default_wvr_flags;
++
++            default_wvr_flags = class_wvr_flags |
++                                (UINT)default_window_proc( winpos->hwnd, WM_NCCALCSIZE, TRUE,
++                                                           (LPARAM)&default_params, FALSE );
++            if (!EqualRect( &default_params.rgrc[0], &new_rects->window ))
++            {
++                params = default_params;
++                wvr_flags = default_wvr_flags;
++            }
++        }
++
+         new_rects->client = params.rgrc[0];
+ 
+         TRACE( "hwnd %p old win %s old client %s new win %s new client %s\n", winpos->hwnd,
+@@ -4003,6 +4056,17 @@ BOOL set_window_pos( WINDOWPOS *winpos, int parent_x, int parent_y )
+     if (((winpos->flags & SWP_AGG_STATUSFLAGS) != SWP_AGG_NOPOSCHANGE)
+             && !((orig_flags & SWP_AGG_NOCLIENTCHANGE) && (orig_flags & SWP_SHOWWINDOW)))
+     {
++        static const UINT reentrant_resize_flags =
++            SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER;
++        DWORD style = get_window_long( winpos->hwnd, GWL_STYLE );
++        DWORD tid = GetCurrentThreadId();
++        BOOL suppress_reentrant_wpch =
++            !(style & WS_CHILD) &&
++            reentrant_wpchanged_depth &&
++            reentrant_wpchanged_thread == tid &&
++            reentrant_wpchanged_hwnd == winpos->hwnd &&
++            (orig_flags & reentrant_resize_flags) == reentrant_resize_flags &&
++            !(orig_flags & (SWP_NOSIZE | SWP_SHOWWINDOW | SWP_HIDEWINDOW));
+         /* WM_WINDOWPOSCHANGED is sent even if SWP_NOSENDCHANGING is set
+            and always contains final window position.
+          */
+@@ -4010,7 +4074,22 @@ BOOL set_window_pos( WINDOWPOS *winpos, int parent_x, int parent_y )
+         winpos->y  = new_rects.window.top;
+         winpos->cx = new_rects.window.right - new_rects.window.left;
+         winpos->cy = new_rects.window.bottom - new_rects.window.top;
+-        send_message( winpos->hwnd, WM_WINDOWPOSCHANGED, 0, (LPARAM)winpos );
++        /* Avoid re-entering the same top-level window with a nested
++         * size-only WM_WINDOWPOSCHANGED update. */
++        if (!suppress_reentrant_wpch)
++        {
++            DWORD prev_thread = reentrant_wpchanged_thread;
++            HWND prev_hwnd = reentrant_wpchanged_hwnd;
++            UINT prev_depth = reentrant_wpchanged_depth;
++
++            reentrant_wpchanged_thread = tid;
++            reentrant_wpchanged_hwnd = winpos->hwnd;
++            reentrant_wpchanged_depth = prev_depth + 1;
++            send_message( winpos->hwnd, WM_WINDOWPOSCHANGED, 0, (LPARAM)winpos );
++            reentrant_wpchanged_thread = prev_thread;
++            reentrant_wpchanged_hwnd = prev_hwnd;
++            reentrant_wpchanged_depth = prev_depth;
++        }
+     }
+ 
+     if ((winpos->flags & (SWP_NOSIZE|SWP_NOMOVE|SWP_FRAMECHANGED)) != (SWP_NOSIZE|SWP_NOMOVE))
+diff --git a/dlls/winex11.drv/event.c b/dlls/winex11.drv/event.c
+index e96b5730..50c56e6f 100644
+--- a/dlls/winex11.drv/event.c
++++ b/dlls/winex11.drv/event.c
+@@ -1316,6 +1316,19 @@ static void handle_wm_normal_hints_notify( HWND hwnd, XPropertyEvent *event )
+     release_win_data( data );
+ }
+ 
++static void handle_net_frame_extents_notify( HWND hwnd, XPropertyEvent *event )
++{
++    struct x11drv_win_data *data;
++    long extents[4] = {0};
++    BOOL valid = FALSE;
++
++    if (!(data = get_win_data( hwnd ))) return;
++    if (event->state == PropertyNewValue)
++        valid = read_net_frame_extents( event->display, event->window, extents );
++    window_net_frame_extents_notify( data, extents, valid );
++    release_win_data( data );
++}
++
+ static void handle_net_supported_notify( XPropertyEvent *event )
+ {
+     struct x11drv_thread_data *data = x11drv_thread_data();
+@@ -1353,6 +1366,7 @@ static BOOL X11DRV_PropertyNotify( HWND hwnd, XEvent *xev )
+     if (event->atom == x11drv_atom(WM_HINTS)) handle_wm_hints_notify( hwnd, event );
+     if (event->atom == x11drv_atom(_MOTIF_WM_HINTS)) handle_mwm_hints_notify( hwnd, event );
+     if (event->atom == x11drv_atom(WM_NORMAL_HINTS)) handle_wm_normal_hints_notify( hwnd, event );
++    if (event->atom == x11drv_atom(_NET_FRAME_EXTENTS)) handle_net_frame_extents_notify( hwnd, event );
+     if (event->atom == x11drv_atom(_NET_SUPPORTED)) handle_net_supported_notify( event );
+     if (event->atom == x11drv_atom(_NET_ACTIVE_WINDOW)) handle_net_active_window( event );
+ 
+diff --git a/dlls/winex11.drv/init.c b/dlls/winex11.drv/init.c
+index 9229d90c..96fd532f 100644
+--- a/dlls/winex11.drv/init.c
++++ b/dlls/winex11.drv/init.c
+@@ -744,6 +744,7 @@ static const struct user_driver_funcs x11drv_funcs =
+     .pWindowMessage = X11DRV_WindowMessage,
+     .pWindowPosChanging = X11DRV_WindowPosChanging,
+     .pGetWindowStyleMasks = X11DRV_GetWindowStyleMasks,
++    .pGetFrameExtents = X11DRV_GetFrameExtents,
+     .pGetWindowStateUpdates = X11DRV_GetWindowStateUpdates,
+     .pCreateWindowSurface = X11DRV_CreateWindowSurface,
+     .pMoveWindowBits = X11DRV_MoveWindowBits,
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index c271491f..9c16ade0 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -518,10 +518,6 @@ static unsigned long get_mwm_decorations_for_style( DWORD style, DWORD ex_style
+  */
+ static unsigned long get_mwm_decorations( struct x11drv_win_data *data, DWORD style, DWORD ex_style )
+ {
+-    /* NSPA: Don't gate MWM decorations on window == visible.  The visible
+-     * rect may not yet reflect the decoration offset (bootstrap / visual
+-     * change), causing the WM to never see decoration hints.  The style
+-     * check in get_mwm_decorations_for_style is sufficient. */
+     if (!data->managed) return 0;
+     return get_mwm_decorations_for_style( style, ex_style );
+ }
+@@ -1689,6 +1685,43 @@ UINT get_window_net_wm_state( Display *display, Window window )
+ }
+ 
+ 
++BOOL read_net_frame_extents( Display *display, Window window, long *extents )
++{
++    Atom type;
++    int format;
++    unsigned long count, remaining;
++    unsigned char *prop = NULL;
++
++    if (XGetWindowProperty( display, window, x11drv_atom(_NET_FRAME_EXTENTS),
++                            0, 4, False, XA_CARDINAL, &type, &format,
++                            &count, &remaining, &prop ) != Success || !prop)
++        return FALSE;
++
++    if (type == XA_CARDINAL && format == 32 && count == 4)
++    {
++        long *data = (long *)prop;
++        extents[0] = data[0];
++        extents[1] = data[1];
++        extents[2] = data[2];
++        extents[3] = data[3];
++        XFree( prop );
++        return TRUE;
++    }
++
++    XFree( prop );
++    return FALSE;
++}
++
++void window_net_frame_extents_notify( struct x11drv_win_data *data, const long *extents, BOOL valid )
++{
++    data->has_frame_extents = valid;
++    if (valid)
++        memcpy( data->frame_extents, extents, sizeof(data->frame_extents) );
++    else
++        memset( data->frame_extents, 0, sizeof(data->frame_extents) );
++}
++
++
+ /***********************************************************************
+  *     set_xembed_flags
+  */
+@@ -1918,6 +1951,21 @@ static UINT window_update_client_state( struct x11drv_win_data *data )
+     return 0;
+ }
+ 
++static RECT window_rect_from_visible_state( const struct x11drv_win_data *data, RECT visible_rect )
++{
++    RECT window_rect = window_rect_from_visible( &data->rects, visible_rect );
++
++    if (data->managed && data->has_frame_extents)
++    {
++        window_rect.left   = visible_rect.left - data->frame_extents[0];
++        window_rect.top    = visible_rect.top - data->frame_extents[2];
++        window_rect.right  = visible_rect.right + data->frame_extents[1];
++        window_rect.bottom = visible_rect.bottom + data->frame_extents[3];
++    }
++
++    return window_rect;
++}
++
+ static UINT window_update_client_config( struct x11drv_win_data *data )
+ {
+     static const UINT fullscreen_mask = (1 << NET_WM_STATE_MAXIMIZED) | (1 << NET_WM_STATE_FULLSCREEN);
+@@ -1949,7 +1997,7 @@ static UINT window_update_client_config( struct x11drv_win_data *data )
+     }
+ 
+     flags = SWP_NOACTIVATE | SWP_NOZORDER;
+-    rect = new_rect = window_rect_from_visible( &data->rects, data->current_state.rect );
++    rect = new_rect = window_rect_from_visible_state( data, data->current_state.rect );
+     if (new_rect.left == old_rect.left && new_rect.top == old_rect.top) flags |= SWP_NOMOVE;
+     else OffsetRect( &rect, old_rect.left - new_rect.left, old_rect.top - new_rect.top );
+     if (rect.right == old_rect.right && rect.bottom == old_rect.bottom) flags |= SWP_NOSIZE;
+@@ -1993,7 +2041,7 @@ BOOL X11DRV_GetWindowStateUpdates( HWND hwnd, UINT *state_cmd, UINT *swp_flags,
+     {
+         *state_cmd = window_update_client_state( data );
+         *swp_flags = window_update_client_config( data );
+-        *rect = window_rect_from_visible( &data->rects, data->current_state.rect );
++        *rect = window_rect_from_visible_state( data, data->current_state.rect );
+         release_win_data( data );
+     }
+ 
+@@ -3430,6 +3478,28 @@ BOOL X11DRV_GetWindowStyleMasks( HWND hwnd, UINT style, UINT ex_style, UINT *sty
+     return TRUE;
+ }
+ 
++/***********************************************************************
++ *      GetFrameExtents   (X11DRV.@)
++ */
++BOOL X11DRV_GetFrameExtents( HWND hwnd, RECT *frame_rect )
++{
++    struct x11drv_win_data *data;
++
++    if (!(data = get_win_data( hwnd ))) return FALSE;
++    if (!data->managed || !data->has_frame_extents)
++    {
++        release_win_data( data );
++        return FALSE;
++    }
++
++    frame_rect->left   = -data->frame_extents[0];
++    frame_rect->top    = -data->frame_extents[2];
++    frame_rect->right  =  data->frame_extents[1];
++    frame_rect->bottom =  data->frame_extents[3];
++    release_win_data( data );
++    return TRUE;
++}
++
+ 
+ static BOOL get_desired_wm_state( DWORD style, const struct window_rects *rects )
+ {
+diff --git a/dlls/winex11.drv/x11drv.h b/dlls/winex11.drv/x11drv.h
+index 664c45d9..a74c975d 100644
+--- a/dlls/winex11.drv/x11drv.h
++++ b/dlls/winex11.drv/x11drv.h
+@@ -538,6 +538,7 @@ enum x11drv_atoms
+     XATOM__NET_WM_WINDOW_TYPE_DIALOG,
+     XATOM__NET_WM_WINDOW_TYPE_NORMAL,
+     XATOM__NET_WM_WINDOW_TYPE_UTILITY,
++    XATOM__NET_FRAME_EXTENTS,
+     XATOM__NET_WM_WINDOW_TYPE_DROPDOWN_MENU,
+     XATOM__NET_WORKAREA,
+     XATOM__GTK_WORKAREAS_D0,
+@@ -680,6 +681,8 @@ struct x11drv_win_data
+     UINT        parent_invalid : 1; /* is the parent host window possibly invalid */
+     UINT        reparenting : 1; /* window is being reparented, likely from a decoration change */
+     UINT        is_resizable : 1; /* window is allowed to be resized by the window manager */
++    UINT        has_frame_extents : 1;
++    long        frame_extents[4];
+     Window      embedder;       /* window id of embedder */
+     Pixmap         icon_pixmap;
+     Pixmap         icon_mask;
+@@ -725,6 +728,9 @@ extern BOOL is_net_supported( Atom atom );
+ extern Window init_clip_window(void);
+ extern void window_set_user_time( struct x11drv_win_data *data, Time time, BOOL init );
+ extern UINT get_window_net_wm_state( Display *display, Window window );
++extern BOOL read_net_frame_extents( Display *display, Window window, long *extents );
++extern void window_net_frame_extents_notify( struct x11drv_win_data *data, const long *extents, BOOL valid );
++extern BOOL X11DRV_GetFrameExtents( HWND hwnd, RECT *frame_rect );
+ extern void make_window_embedded( struct x11drv_win_data *data );
+ extern Window create_client_window( HWND hwnd, RECT client_rect, const XVisualInfo *visual, Colormap colormap );
+ extern void detach_client_window( struct x11drv_win_data *data, Window client_window );
+diff --git a/dlls/winex11.drv/x11drv_main.c b/dlls/winex11.drv/x11drv_main.c
+index b42d92d2..500a0133 100644
+--- a/dlls/winex11.drv/x11drv_main.c
++++ b/dlls/winex11.drv/x11drv_main.c
+@@ -157,6 +157,7 @@ const char * const X11DRV_atom_names[NB_XATOMS - FIRST_XATOM] =
+     "_NET_WM_WINDOW_TYPE_DIALOG",
+     "_NET_WM_WINDOW_TYPE_NORMAL",
+     "_NET_WM_WINDOW_TYPE_UTILITY",
++    "_NET_FRAME_EXTENTS",
+     "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
+     "_NET_WORKAREA",
+     "_GTK_WORKAREAS_D0",
+diff --git a/include/wine/gdi_driver.h b/include/wine/gdi_driver.h
+index 97c646d6..9dae9334 100644
+--- a/include/wine/gdi_driver.h
++++ b/include/wine/gdi_driver.h
+@@ -419,6 +419,7 @@ struct user_driver_funcs
+     LRESULT (*pWindowMessage)(HWND,UINT,WPARAM,LPARAM);
+     BOOL    (*pWindowPosChanging)(HWND,UINT,BOOL,const struct window_rects *);
+     BOOL    (*pGetWindowStyleMasks)(HWND,UINT,UINT,UINT*,UINT*);
++    BOOL    (*pGetFrameExtents)(HWND,RECT*);
+     BOOL    (*pGetWindowStateUpdates)(HWND,UINT*,UINT*,RECT*,HWND*);
+     BOOL    (*pCreateWindowSurface)(HWND,BOOL,const RECT *,struct window_surface**);
+     void    (*pMoveWindowBits)(HWND,const struct window_rects *,const struct window_rects *,const RECT *);

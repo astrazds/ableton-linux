@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+runtime="${ABLETON_PORTAL_WINE_ROOT:-$HOME/.local/opt/wine-d2d1-nspa-11.11-portal}"
+stable_launcher="${ABLETON_STABLE_LAUNCHER:-$HOME/.local/bin/ableton-live}"
+
+if [[ ! -x "$runtime/bin/wine" || ! -x "$runtime/bin/wineserver" ]]; then
+    echo "Portal-enabled Ableton Wine runtime is missing: $runtime" >&2
+    exit 69
+fi
+
+if [[ ! -x "$stable_launcher" ]]; then
+    echo "Canonical Ableton launcher is missing: $stable_launcher" >&2
+    exit 69
+fi
+
+# A running Live singleton would keep the wineserver/runtime that launched it,
+# making an apparent switch to the portal candidate ineffective.
+if pgrep -af 'Ableton Live 12 Suite[.]exe' 2>/dev/null | grep -q 'ProgramData'; then
+    echo "Ableton Live is already running; close it before switching Wine runtimes." >&2
+    exit 75
+fi
+
+unset WINELOADER WINEDLLPATH WINEDLLOVERRIDES WINEARCH WINEESYNC WINEFSYNC WINE_FORCE_PORTAL
+export ABLETON_WINE_ROOT="$runtime"
+
+# Force mode bypasses compatibility checks for hooks and custom templates. The
+# prefix's FileDialogPortal=auto policy is the safe default.
+if [[ "${ABLETON_PORTAL_FORCE:-0}" == 1 ]]; then
+    export WINE_FORCE_PORTAL=1
+fi
+
+# Delegate audio, DPI, D3D, hotplug, realtime-priority, URL, and virtual-desktop
+# behavior to the canonical launcher; only its Wine root changes.
+exec "$stable_launcher" "$@"

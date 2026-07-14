@@ -1,0 +1,247 @@
+0024:fixme:dxgi:DXGID3D10CreateDevice Ignoring flags 0x20.
+05d0:fixme:dxgi:DXGID3D10CreateDevice Ignoring flags 0x1.
+05d0:fixme:dxgi:wined3d_swapchain_desc_from_dxgi Ignoring alpha mode 0x1.
+05d0:fixme:d3d:wined3d_swapchain_init Unimplemented swap effect 0x3.
+05d0:fixme:dxgi:dxgi_factory_CreateSwapChainForComposition Created composition window 00000000000301A4 (2038x2560) for swapchain 00007FFFFEFF4E00.
+05d0:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 000000000001019E client=2038x2560 screen=(5,56)-(2043,2616) parent=000000000001018E sc=2038x2560.
+05d0:fixme:dxgi:dcomp_swapchain_wndproc DComp: parent 000000000001018E screen=(5,56)-(269,56).
+05d0:fixme:dxgi:dcomp_swapchain_wndproc DComp popup-detect: target 000000000001019E style=0x5c000000 parent=000000000001018E count=0.
+05d0:fixme:dxgi:dcomp_swapchain_wndproc DComp: subclassed target 000000000001019E, orig wndproc 00006FFFE09430C0, timer started, sc=00007FFFFEFF4E00.
+05d0:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 000000000001019E now 2038x2560, swapchain switched.
+05d0:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #1: swapchain 00007F4CF7F05D60 win 000000000001019E thread_ctx 0x22 dst (0,0)-(2038,2560) buffer 2038x2560.
+05dc:fixme:d3d:swapchain_blit_gdi Using GDI present.
+05d8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #1: hwnd 000000000001019E 2038x2560 reason=timer-idle.
+05d8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #2: hwnd 000000000001019E 2038x2560 reason=timer-idle.
+05d8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #3: hwnd 000000000001019E 2038x2560 reason=timer-idle.
+05d8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #4: hwnd 000000000001019E 2038x2560 reason=timer-idle.
+05d8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #5: hwnd 000000000001019E 2038x2560 reason=timer-idle.
+0024:fixme:dxgi:dxgi_factory_IsCurrent iface 00000000443CEEC0 stub!
+0024:fixme:dxgi:DXGID3D10CreateDevice Ignoring flags 0x20.
+0740:fixme:d3d:state_linepattern_w Setting line patterns is not supported in OpenGL core contexts.
+** REMEMBER: startTimer()
+0744:fixme:dxgi:dxgi_output_WaitForVBlank iface 0000000044CE6600 semi-stub, sleeping for display refresh.
+0024:fixme:dxgi:wined3d_swapchain_desc_from_dxgi Ignoring alpha mode 0x1.
+0024:fixme:dxgi:wined3d_swapchain_flags_from_dxgi Unhandled flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_init Unimplemented swap effect 0x3.
+0024:fixme:dxgi:dxgi_factory_CreateSwapChainForComposition Created composition window 00000000000101C4 (984x961) for swapchain 0000000044626A30.
+0024:fixme:dxgi:d3d11_swapchain_GetFrameLatencyWaitableObject Created frame latency event 0000000000000D78 for swapchain 0000000044626A30.
+0024:fixme:dxgi:d3d11_swapchain_SetMaximumFrameLatency iface 0000000044626A30, max_latency 1 stub!
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 00000000000101C2 client=984x961 screen=(50,130)-(1034,1091) parent=00000000000201B4 sc=984x961.
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: parent 00000000000201B4 screen=(47,72)-(187,133).
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp popup-detect: target 00000000000101C2 style=0x46000000 parent=00000000000201B4 count=0.
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: subclassed target 00000000000101C2, orig wndproc 00006FFFE09430C0, timer started, sc=0000000044626A30.
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 00000000000101C2 now 984x961, swapchain switched.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #1: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(984,961) buffer 984x961.
+0740:fixme:d3d:swapchain_blit_gdi Using GDI present.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #2: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(984,961) buffer 984x961.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #3: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(984,961) buffer 984x961.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #4: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(984,961) buffer 984x961.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #5: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(984,961) buffer 984x961.
+0024:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #1: hwnd 00000000000101C2 984x961 reason=timer-idle.
+0024:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #2: hwnd 00000000000101C2 984x961 reason=mouseactivate.
+0024:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #3: hwnd 00000000000101C2 984x961 reason=childactivate.
+0024:fixme:dxgi:dcomp_target_wndproc WM_PAINT #1: hwnd 00000000000101C2 984x961, comp_dc=00000000034100E1.
+0024:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #4: hwnd 00000000000101C2 984x961 reason=windowposchanged.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 984x961 -> 982x959.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #71: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(982,959) buffer 982x959.
+0024:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #5: hwnd 00000000000101C2 982x959 reason=windowposchanged.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 982x959 -> 964x941.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #72: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(964,941) buffer 964x941.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 964x941 -> 951x929.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #73: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(951,929) buffer 951x929.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 951x929 -> 941x919.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #75: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(941,919) buffer 941x919.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 941x919 -> 934x912.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #76: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(934,912) buffer 934x912.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 934x912 -> 924x902.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #77: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(924,902) buffer 924x902.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 924x902 -> 917x896.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #78: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(917,896) buffer 917x896.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 917x896 -> 881x860.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #80: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(881,860) buffer 881x860.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 881x860 -> 860x840.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #82: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(860,840) buffer 860x840.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 860x840 -> 854x834.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #83: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(854,834) buffer 854x834.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 854x834 -> 847x827.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #85: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(847,827) buffer 847x827.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 847x827 -> 841x821.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #86: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(841,821) buffer 841x821.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 841x821 -> 833x814.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #88: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(833,814) buffer 833x814.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 833x814 -> 822x803.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #89: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(822,803) buffer 822x803.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 822x803 -> 813x794.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #90: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(813,794) buffer 813x794.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 813x794 -> 799x780.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #91: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(799,780) buffer 799x780.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 799x780 -> 786x768.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #92: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(786,768) buffer 786x768.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 786x768 -> 762x744.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #93: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(762,744) buffer 762x744.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 762x744 -> 744x727.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #94: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(744,727) buffer 744x727.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 744x727 -> 739x722.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #95: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(739,722) buffer 739x722.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 739x722 -> 735x718.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #96: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(735,718) buffer 735x718.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 735x718 -> 731x714.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #97: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(731,714) buffer 731x714.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 731x714 -> 729x712.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #98: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(729,712) buffer 729x712.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 729x712 -> 727x710.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #99: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(727,710) buffer 727x710.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 727x710 -> 726x709.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #100: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(726,709) buffer 726x709.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 726x709 -> 724x707.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #101: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(724,707) buffer 724x707.
+0024:fixme:dxgi:dcomp_target_wndproc WM_PAINT #2: hwnd 00000000000101C2 726x709, comp_dc=000000001C4100E1.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 724x707 -> 725x708.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #102: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(725,708) buffer 725x708.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 725x708 -> 729x712.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #103: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(729,712) buffer 729x712.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 729x712 -> 763x745.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #104: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(763,745) buffer 763x745.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 763x745 -> 788x770.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #105: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(788,770) buffer 788x770.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 788x770 -> 815x796.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #106: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(815,796) buffer 815x796.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 815x796 -> 817x798.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #107: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(817,798) buffer 817x798.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 817x798 -> 816x798.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #109: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(816,798) buffer 816x798.
+0024:fixme:dxgi:dcomp_target_wndproc WM_PAINT #3: hwnd 00000000000101C2 816x798, comp_dc=00000000244100E1.
+0024:fixme:dxgi:dcomp_target_wndproc WM_PAINT #4: hwnd 00000000000101C2 816x798, comp_dc=00000000244100E1.
+0024:fixme:dxgi:dcomp_target_wndproc WM_PAINT #5: hwnd 00000000000101C2 816x798, comp_dc=00000000244100E1.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 816x798 -> 819x801.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #367: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(819,801) buffer 819x801.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 819x801 -> 859x840.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #368: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(859,840) buffer 859x840.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 859x840 -> 1072x1048.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #369: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1072,1048) buffer 1072x1048.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 1072x1048 -> 1114x1089.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #370: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1114,1089) buffer 1114x1089.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 1114x1089 -> 1126x1101.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #371: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1101) buffer 1126x1101.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 1126x1101 -> 1126x1100.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #372: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1100) buffer 1126x1100.
+0024:fixme:dxgi:wined3d_swapchain_desc_from_dxgi Ignoring alpha mode 0x1.
+0024:fixme:dxgi:wined3d_swapchain_flags_from_dxgi Unhandled flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_init Unimplemented swap effect 0x3.
+0024:fixme:dxgi:dxgi_factory_CreateSwapChainForComposition Created composition window 0000000000020142 (1012x897) for swapchain 00000000443CE340.
+0024:fixme:dxgi:d3d11_swapchain_GetFrameLatencyWaitableObject Created frame latency event 0000000000000D8C for swapchain 00000000443CE340.
+0024:fixme:dxgi:d3d11_swapchain_SetMaximumFrameLatency iface 00000000443CE340, max_latency 1 stub!
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 000000000003014A client=1012x897 screen=(453,218)-(1465,1115) parent=0000000000000000 sc=1012x897.
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 000000000003014A is top-level, using GL present (no GDI readback).
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp popup-detect: target 000000000003014A style=0x86c80000 parent=0000000000000000 count=1.
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp POPUP mode: target 000000000003014A, orig wndproc 00006FFFE09430C0, sc=00000000443CE340, transient->00000000000101C2 (reblit timer 200ms).
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 000000000003014A now 1012x897, swapchain switched.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #394: swapchain 000000004867F5D0 win 000000000003014A thread_ctx 0x6010 dst (0,0)-(1012,897) buffer 1012x897.
+0024:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit skipped: hwnd 000000000003014A comp_dc=0000000000000000 dims=0 reason=popup-timer.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #396: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1100) buffer 1126x1100.
+0024:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit skipped: hwnd 000000000003014A comp_dc=0000000000000000 dims=0 reason=popup-timer.
+0024:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit skipped: hwnd 000000000003014A comp_dc=0000000000000000 dims=0 reason=popup-timer.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #407: swapchain 000000004867F5D0 win 000000000003014A thread_ctx 0x6010 dst (0,0)-(1012,897) buffer 1012x897.
+05d8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit #200: hwnd 000000000001019E 2038x2560 reason=timer-idle.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #412: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1100) buffer 1126x1100.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #414: swapchain 000000004867F5D0 win 000000000003014A thread_ctx 0x6010 dst (0,0)-(1012,897) buffer 1012x897.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #416: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1100) buffer 1126x1100.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #421: swapchain 000000004867F5D0 win 000000000003014A thread_ctx 0x6010 dst (0,0)-(1012,897) buffer 1012x897.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #422: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1100) buffer 1126x1100.
+0024:fixme:dxgi:dxgi_surface_GetDC iface 000000004849CE90, discard 0, hdc 000000000010DCC8 semi-stub!
+0024:fixme:dxgi:dxgi_surface_GetDC iface 00000000484A0770, discard 0, hdc 000000000010DCC8 semi-stub!
+0024:fixme:dxgi:dxgi_surface_GetDC iface 00000000484A5870, discard 0, hdc 000000000010DCC8 semi-stub!
+0024:fixme:dxgi:dxgi_surface_GetDC iface 00000000484A76F0, discard 0, hdc 000000000010DCC8 semi-stub!
+0024:fixme:dxgi:wined3d_swapchain_desc_from_dxgi Ignoring alpha mode 0x1.
+0024:fixme:dxgi:wined3d_swapchain_flags_from_dxgi Unhandled flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_init Unimplemented swap effect 0x3.
+0024:fixme:dxgi:dxgi_factory_CreateSwapChainForComposition Created composition window 000000000002015C (453x536) for swapchain 00000000443CE5C0.
+0024:fixme:dxgi:d3d11_swapchain_GetFrameLatencyWaitableObject Created frame latency event 0000000000000DEC for swapchain 00000000443CE5C0.
+0024:fixme:dxgi:d3d11_swapchain_SetMaximumFrameLatency iface 00000000443CE5C0, max_latency 1 stub!
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 0000000000030150 client=453x536 screen=(1049,481)-(1502,1017) parent=0000000000000000 sc=453x536.
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 0000000000030150 is top-level, using GL present (no GDI readback).
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp popup-detect: target 0000000000030150 style=0x86000000 parent=0000000000000000 count=2.
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp POPUP mode: target 0000000000030150, orig wndproc 00006FFFE09430C0, sc=00000000443CE5C0, transient->000000000003014A (reblit timer 200ms).
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 0000000000030150 now 453x536, swapchain switched.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #426: swapchain 000000004867F5D0 win 000000000003014A thread_ctx 0x6010 dst (0,0)-(1012,897) buffer 1012x897.
+0024:fixme:dxgi:dxgi_surface_GetDC iface 0000000048613ED0, discard 0, hdc 000000000010F968 semi-stub!
+0024:fixme:dxgi:dxgi_surface_GetDC iface 0000000044DB3D60, discard 0, hdc 000000000010F968 semi-stub!
+0024:fixme:dxgi:dxgi_surface_GetDC iface 00000000486322E0, discard 0, hdc 000000000010F968 semi-stub!
+0024:fixme:dxgi:dxgi_surface_GetDC iface 000000004863B520, discard 0, hdc 000000000010F968 semi-stub!
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #427: swapchain 00000000484A3770 win 0000000000030150 thread_ctx 0x6010 dst (0,0)-(453,536) buffer 453x536.
+0024:fixme:dxgi:dxgi_surface_GetDC iface 0000000048613ED0, discard 0, hdc 000000000010F968 semi-stub!
+0024:fixme:dxgi:dxgi_surface_GetDC iface 0000000044DB3D60, discard 0, hdc 000000000010F968 semi-stub!
+0024:fixme:dxgi:dxgi_surface_GetDC iface 00000000486322E0, discard 0, hdc 000000000010F968 semi-stub!
+0024:fixme:dxgi:dxgi_surface_GetDC iface 000000004863B520, discard 0, hdc 000000000010F968 semi-stub!
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #439: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1100) buffer 1126x1100.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #447: swapchain 00000000484A3770 win 0000000000030150 thread_ctx 0x6010 dst (0,0)-(453,536) buffer 453x536.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #448: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1100) buffer 1126x1100.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #451: swapchain 00000000484A3770 win 0000000000030150 thread_ctx 0x6010 dst (0,0)-(453,536) buffer 453x536.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #454: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1100) buffer 1126x1100.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #456: swapchain 00000000484A3770 win 0000000000030150 thread_ctx 0x6010 dst (0,0)-(453,536) buffer 453x536.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #457: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(1126,1100) buffer 1126x1100.
+0024:fixme:dxgi:dcomp_popup_wndproc DComp popup 0000000000030150 destroyed, switched back to comp_wnd 000000000002015C.
+0024:fixme:dxgi:dcomp_popup_wndproc DComp popup 000000000003014A destroyed, switched back to comp_wnd 0000000000020142.
+0024:fixme:dxgi:d3d11_swapchain_ResizeBuffers Ignoring flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_resize_buffers RESIZE-DBG: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 1126x1100 -> 795x777.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #466: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(795,777) buffer 795x777.
+0024:fixme:dxgi:wined3d_swapchain_desc_from_dxgi Ignoring alpha mode 0x1.
+0024:fixme:dxgi:wined3d_swapchain_flags_from_dxgi Unhandled flags 0x40.
+0024:fixme:d3d:wined3d_swapchain_init Unimplemented swap effect 0x3.
+0024:fixme:dxgi:dxgi_factory_CreateSwapChainForComposition Created composition window 0000000000030146 (716x640) for swapchain 000000004453BBE0.
+0024:fixme:dxgi:d3d11_swapchain_GetFrameLatencyWaitableObject Created frame latency event 0000000000000D94 for swapchain 000000004453BBE0.
+0024:fixme:dxgi:d3d11_swapchain_SetMaximumFrameLatency iface 000000004453BBE0, max_latency 1 stub!
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 0000000000040142 client=716x640 screen=(453,218)-(1169,858) parent=0000000000000000 sc=716x640.
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 0000000000040142 is top-level, using GL present (no GDI readback).
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp popup-detect: target 0000000000040142 style=0x86c80000 parent=0000000000000000 count=1.
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp POPUP mode: target 0000000000040142, orig wndproc 00006FFFE09430C0, sc=000000004453BBE0, transient->00000000000101C2 (reblit timer 200ms).
+0024:fixme:dxgi:dcomp_swapchain_wndproc DComp: target 0000000000040142 now 716x640, swapchain switched.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #468: swapchain 0000000048628890 win 0000000000040142 thread_ctx 0x6010 dst (0,0)-(716,640) buffer 716x640.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #469: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(795,777) buffer 795x777.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #470: swapchain 0000000048628890 win 0000000000040142 thread_ctx 0x6010 dst (0,0)-(716,640) buffer 716x640.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #471: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(795,777) buffer 795x777.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #476: swapchain 0000000048628890 win 0000000000040142 thread_ctx 0x6010 dst (0,0)-(716,640) buffer 716x640.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #477: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(795,777) buffer 795x777.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #483: swapchain 0000000048628890 win 0000000000040142 thread_ctx 0x6010 dst (0,0)-(716,640) buffer 716x640.
+0024:fixme:dxgi:dcomp_popup_wndproc DComp popup 0000000000040142 destroyed, switched back to comp_wnd 0000000000030146.
+0024:fixme:d3d:wined3d_swapchain_present PRESENT-DBG #486: swapchain 00000000448B5E00 win 00000000000101C2 thread_ctx 0x6010 dst (0,0)-(795,777) buffer 795x777.
+05d8:fixme:dxgi:dcomp_reblit_comp_buffer Re-blit skipped: hwnd 000000000001019E comp_dc=0000000000000000 dims=0 reason=showwindow.

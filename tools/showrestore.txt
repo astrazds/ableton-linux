@@ -1,0 +1,5 @@
+hwnd 00000000000100A4 menu=1 iconic=0 showCmd=1 rect (409,181)-(2156,1436)
+hwnd 000000000001009C menu=0 iconic=0 showCmd=1 rect (0,0)-(140,34)
+restoring 00000000000100A4 then closing Live
+pre-close: iconic=0 showCmd=1
+WM_CLOSE posted

@@ -1,0 +1,40 @@
+RECORD 1.13
+  4446.4  EVT ClientMessage win=0x4000005 type=_NET_ACTIVE_WINDOW
+  4450.4  EVT ClientMessage win=0x4000005 type=_NET_ACTIVE_WINDOW
+  4450.4  EVT ClientMessage win=0x4000005 WM_PROTOCOLS WM_TAKE_FOCUS time=2753073
+  4450.5  EVT ClientMessage win=0x4000005 WM_PROTOCOLS _NET_WM_PING time=2753073
+  4450.6  REQ SetInputFocus win=0x4000005 time=2753073 revert=2
+  4450.6  EVT FocusOut win=0x600003 detail=3 mode=0
+  4450.6  EVT FocusIn  win=0xc000d6 detail=4 mode=0
+  4450.6  EVT FocusIn  win=0x4000005 detail=3 mode=0
+  4450.6  EVT ClientMessage win=0x35c WM_PROTOCOLS _NET_WM_PING time=2753073
+  4450.6  EVT ClientMessage win=0x35c WM_PROTOCOLS _NET_WM_PING time=2753073
+  4466.3  EVT ClientMessage win=0x40001c type=_XIM_PROTOCOL
+  4466.4  EVT ClientMessage win=0x4000002 type=_XIM_PROTOCOL
+  4466.4  EVT ClientMessage win=0x40001c type=_XIM_PROTOCOL
+  4511.7  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4511.9  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4527.0  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4527.2  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4527.2  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4542.4  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4542.5  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4557.6  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4557.6  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4572.8  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4572.9  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4588.1  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4603.3  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4603.3  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4618.5  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4618.5  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4633.6  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4633.7  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4648.9  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4649.1  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4664.3  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4679.5  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4679.6  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4694.7  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS
+  4694.8  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_DRAWN
+  4709.9  EVT ClientMessage win=0xc000d6 type=_NET_WM_FRAME_TIMINGS

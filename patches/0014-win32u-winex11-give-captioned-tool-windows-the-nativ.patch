@@ -1,0 +1,50 @@
+Subject: win32u,winex11: give captioned tool windows the native
+ WM frame (plugin-editor titlebar)
+
+winex11: captioned tool windows get MWM decorations (close-only). win32u: when such a window's NC area
+is caption+borders only, map the X window to exactly the client area so the Win32 NC band is never drawn.
+---
+ dlls/win32u/window.c      | 10 ++++++++++
+ dlls/winex11.drv/window.c |  8 +++++++-
+ 2 files changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
+index d325f2eb..b2289f5a 100644
+--- a/dlls/win32u/window.c
++++ b/dlls/win32u/window.c
+@@ -2004,6 +2004,16 @@ static RECT get_visible_rect( HWND hwnd, BOOL shaped, UINT style, UINT ex_style,
+      * app-drawn chrome, leaving a permanently repainted border rim. */
+     if (EqualRect( &rects->window, &rects->client )) return rects->window;
+     if (!user_driver->pGetWindowStyleMasks( hwnd, style, ex_style, &style_mask, &ex_style_mask )) return rects->window;
++    /* WM-decorated captioned tool windows (style_mask & WS_CAPTION means the driver will
++     * request a WM frame for them, see winex11 get_mwm_decorations_for_style) have a
++     * caption+border-only non-client area, all of which the WM frame replaces: map the
++     * X window to exactly the client area. An AdjustWindowRect allowance would instead
++     * leak part of the caption band into the X window whenever the app computes its
++     * non-client size at a different DPI than the window's (Ableton Live insets its
++     * DPI-unaware 96-space Vst3PlugWindow editors with 192-dpi metrics). */
++    if ((ex_style & WS_EX_TOOLWINDOW) && (style & WS_CAPTION) == WS_CAPTION && (style_mask & WS_CAPTION) &&
++        !(style & (WS_HSCROLL | WS_VSCROLL)) && !get_menu( hwnd ) && !IsRectEmpty( &rects->client ))
++        return rects->client;
+     if (!user_driver->pGetFrameExtents( hwnd, &rect ))
+     {
+         if (EqualRect( &rects->window, &rects->client ) && !style_mask && !ex_style_mask) return rects->window;
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index 20dae46f..dad59628 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -500,7 +500,13 @@ static unsigned long get_mwm_decorations_for_style( DWORD style, DWORD ex_style
+ {
+     unsigned long ret = 0;
+ 
+-    if (ex_style & WS_EX_TOOLWINDOW) return 0;
++    /* Tool windows without a full caption stay undecorated. Captioned ones (e.g.
++     * Ableton Live's VST3 plugin editors) fall through and get a WM frame: Wine's
++     * own caption for them is drawn with the wrong DPI's metrics and bitmap-scaled
++     * when the window is DPI-unaware on a high-DPI X screen; the WM titlebar
++     * replaces it entirely (win32u get_visible_rect maps them to their client
++     * area, so the Win32 caption band lies outside the X window). */
++    if ((ex_style & WS_EX_TOOLWINDOW) && (style & WS_CAPTION) != WS_CAPTION) return 0;
+ 
+     if ((style & WS_CAPTION) == WS_CAPTION)
+     {

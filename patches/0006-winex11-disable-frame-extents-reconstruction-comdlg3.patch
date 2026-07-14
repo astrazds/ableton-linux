@@ -1,0 +1,32 @@
+Subject: winex11: disable frame-extents reconstruction (comdlg32
+ dialogs off-screen at high DPI); keep custom-NC + reentrancy fixes
+
+---
+ dlls/winex11.drv/window.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index 0f6d34ee..aff22a5a 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -1718,11 +1718,15 @@ BOOL read_net_frame_extents( Display *display, Window window, long *extents )
+ 
+ void window_net_frame_extents_notify( struct x11drv_win_data *data, const long *extents, BOOL valid )
+ {
+-    data->has_frame_extents = valid;
+-    if (valid)
+-        memcpy( data->frame_extents, extents, sizeof(data->frame_extents) );
+-    else
+-        memset( data->frame_extents, 0, sizeof(data->frame_extents) );
++    /* Frame-extents reconstruction (NSPA 1c) is disabled: feeding the WM's positive
++     * _NET_FRAME_EXTENTS margins into get_visible_rect / window_rect_from_visible_state
++     * (which expect AdjustWindowRect's negative-inset convention) inverts the offset and
++     * shoves standard-decorated windows (comdlg32 file dialogs) off the bottom at high DPI.
++     * Live's own windows are custom-NC (client==window) and never take this path, so
++     * keeping has_frame_extents always FALSE restores stock geometry for decorated windows
++     * without regressing the bug-57955 fixes (custom-NC masking + reentrancy suppression). */
++    data->has_frame_extents = FALSE;
++    memset( data->frame_extents, 0, sizeof(data->frame_extents) );
+ }
+ 
+ 
