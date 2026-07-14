@@ -1,6 +1,6 @@
-# Ableton Live 12 on Linux
+# Ableton Live 12 / Max For Live and Push on Linux
 
-Ableton Live 12 on a patched Wine: reproducible builds, a single-file installer, and a beta test program with remote diagnostics.
+Run Ableton Live 12, Max for Live and Ableton Push 1 and 2 on a patched Wine. Featuring dozens of QoL fixes, reproducible builds, a single-file installer, and a beta test program with remote diagnostics.
 
 ![screenshot.png](screenshot.png)
 
