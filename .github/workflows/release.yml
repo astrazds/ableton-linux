@@ -1,0 +1,96 @@
+# Release pipeline. Wine is built and verified on the builder machine
+# (./build.sh + ./scripts/make-installer.sh); CI never rebuilds it.
+#
+#   1. ./scripts/release.sh pushes the v<VERSION> tag
+#   2. the `draft` job checks tag/VERSION/BUILD-INFO consistency and creates
+#      a draft release with notes from dist/BUILD-INFO-<version>.txt
+#   3. ./scripts/release.sh uploads the dist/ assets — including the
+#      stable-named install-ableton-latest.run — and publishes the release
+#   4. the `verify` job re-downloads every published asset and checks it
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  release:
+    types: [published]
+
+jobs:
+  draft:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the tag against VERSION and BUILD-INFO
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          [ "$ver" = "$(cat VERSION)" ] || {
+              echo "!! tag $GITHUB_REF_NAME does not match VERSION $(cat VERSION)"; exit 1; }
+          [ -f "dist/BUILD-INFO-$ver.txt" ] || {
+              echo "!! dist/BUILD-INFO-$ver.txt is not committed at this tag"; exit 1; }
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "release $GITHUB_REF_NAME already exists — nothing to do"
+              exit 0
+          fi
+          {
+              echo "Single-file installer for Ableton Live 12, Max for Live and Push on Linux."
+              echo
+              echo "Download \`ableton-wine-setup-$ver.run\`, put it next to your Ableton Live"
+              echo "installer, and run:"
+              echo
+              echo '```'
+              echo "sh ~/Downloads/ableton-wine-setup-$ver.run"
+              echo '```'
+              echo
+              echo "The newest installer is always at:"
+              echo "https://github.com/$GITHUB_REPOSITORY/releases/latest/download/install-ableton-latest.run"
+              echo
+              echo "Build provenance:"
+              echo
+              echo '```'
+              cat "dist/BUILD-INFO-$ver.txt"
+              echo '```'
+          } > /tmp/notes.md
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --draft --verify-tag --title "$ver" --notes-file /tmp/notes.md
+
+  verify:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+      - name: Download the published assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir assets
+      - name: Verify the asset set and checksums
+        run: |
+          ver="${TAG#v}"
+          cd assets
+          for f in "ableton-wine-setup-$ver.run" "ableton-wine-setup-$ver.run.sha256" \
+                   "wine-d2d1-nspa-11.11-$ver.tar.zst" "wine-d2d1-nspa-11.11-$ver.tar.zst.sha256" \
+                   "BUILD-INFO-$ver.txt" \
+                   install-ableton-latest.run install-ableton-latest.run.sha256; do
+              [ -f "$f" ] || { echo "!! missing asset: $f"; exit 1; }
+          done
+          sha256sum -c ./*.sha256
+          cmp "ableton-wine-setup-$ver.run" install-ableton-latest.run
+          cmp "BUILD-INFO-$ver.txt" "../dist/BUILD-INFO-$ver.txt"
+      - name: Installer self-check (payload integrity + extraction)
+        run: |
+          ver="${TAG#v}"
+          sh "assets/ableton-wine-setup-$ver.run" --extract /tmp/kit
+          test -x /tmp/kit/scripts/install.sh
