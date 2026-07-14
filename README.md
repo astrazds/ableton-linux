@@ -29,13 +29,13 @@ Place this installer + an Ableton Live zip file downloaded from Ableton.com in t
 ## Getting started
 
 1. Download Ableton Live
-2. Download a release from the Releases tab
+2. Download the latest installer: [install-ableton-latest.run](https://github.com/shibco/ableton-linux/releases/latest/download/install-ableton-latest.run) (versioned builds are on the Releases tab)
 3. If your Ableton archive is in the same place, run the downloaded installer script and follow the instructions.
 
-You can do that either by double clicking the `ableton-wine-setup-*.run` installer, or running this command from your Downloads directory
+You can do that either by double clicking the `install-ableton-latest.run` installer, or running this command from your Downloads directory
 
 ```
-sh ~/Downloads/ableton-wine-setup-*.run
+sh ~/Downloads/install-ableton-latest.run
 ```
 
 ## Issues?
