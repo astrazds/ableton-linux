@@ -5,7 +5,7 @@
 - Replace WineASIO with PipeASIO 1.2.2, a native PipeWire ASIO driver. Removed the stale WineASIO entry. Defaults live in ~/.config/pipeasio/config.ini.
 - Fixes for regressions in theme support.
 - Fixed Webview corruption specific to the Ableton Learn View.
-- Added upgrade path for the installer (see the reademe file for details).
+- Added upgrade path for the installer (see the README for details).
 
 ## 2026.07.17.1
 
