@@ -57,6 +57,15 @@ A few more things to do after you launch for the first time:
 
 If you encounter any unexpected audio behaviour, open an issue or +1 an existing one and I'll fix as a priority!
 
+## Installing plugins
+
+To run a plugin installer inside your Live environment:
+```
+WINEPREFIX=~/.wine-ableton ~/.local/opt/wine-d2d1-nspa-11.11/bin/wine \
+    "/path/to/PluginInstaller.exe"
+```
+You can also manually install plugin .vst3 files inside the `~/.wine-ableton/drive_c/Program Files/Common Files/VST3/` directory.
+
 ## Push 1 + 2 support
 
 This is built in. Use Preferences → Link, Tempo & MIDI → enable one `Push2` row, Live Port for both input and output, and enable the remote toggles. 
