@@ -179,14 +179,11 @@ if [ -n "$glibc" ]; then
     say "   glibc $glibc: ok"
 fi
 # no grep -q: under pipefail it SIGPIPEs ldconfig and falsely fires this warning
-if ! ldconfig -p 2>/dev/null | grep 'libjack\.so\.0' >/dev/null; then
-    say "   WARNING: one sound-system piece is missing: PipeWire's JACK library."
+if ! ldconfig -p 2>/dev/null | grep 'libpipewire-0\.3\.so\.0' >/dev/null; then
+    say "   WARNING: one sound-system piece is missing: the PipeWire client library."
     say "   Everything will install fine, but Live will have NO SOUND until you"
-    say "   add it (package: pipewire-jack). On the Steam Deck, run:"
-    say "     sudo steamos-readonly disable"
-    say "     sudo pacman-key --init && sudo pacman-key --populate archlinux holo"
-    say "     sudo pacman -S pipewire-jack"
-    say "     sudo steamos-readonly enable"
+    say "   add it (package: pipewire, 0.3.56 or newer). Nearly every 2023+ distro"
+    say "   ships it by default; the Steam Deck already has it."
 fi
 # Bundled static cabextract covers machines that lack the host package.
 if ! command -v cabextract >/dev/null; then
@@ -287,7 +284,7 @@ fi
 say "Launch Live:   ~/.local/bin/ableton-live"
 say "Then, inside Live (both matter):"
 say "  * Options menu -> untick 'Auto-Scale Plugin Window'"
-say "  * Preferences -> Audio -> Driver Type: ASIO -> Device: WineASIO"
+say "  * Preferences -> Audio -> Driver Type: ASIO -> Device: PipeASIO"
 say "================================================================"
 exit 0
 __PAYLOAD_BELOW__

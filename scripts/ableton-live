@@ -126,18 +126,9 @@ if ! pgrep -af "Ableton Live.*\.exe" 2>/dev/null | grep "ProgramData" >/dev/null
     fi
 fi
 
-# Audio: WineASIO -> PipeWire (JACK provider). Raise PREFERRED_BUFFERSIZE to 512 if crackles.
-export WINEASIO_NUMBER_INPUTS="${WINEASIO_NUMBER_INPUTS:-2}"
-export WINEASIO_NUMBER_OUTPUTS="${WINEASIO_NUMBER_OUTPUTS:-2}"
-export WINEASIO_FIXED_BUFFERSIZE="${WINEASIO_FIXED_BUFFERSIZE:-on}"
-export WINEASIO_PREFERRED_BUFFERSIZE="${WINEASIO_PREFERRED_BUFFERSIZE:-256}"
-export WINEASIO_CONNECT_TO_HARDWARE="${WINEASIO_CONNECT_TO_HARDWARE:-on}"
-export PIPEWIRE_LATENCY="${PIPEWIRE_LATENCY:-256/48000}"
-
-# Start jacklinkd (re-creates JACK links after device replug) if not already running.
-if command -v jacklinkd >/dev/null 2>&1 && ! pgrep -x jacklinkd >/dev/null 2>&1; then
-    nohup jacklinkd >"${XDG_CACHE_HOME:-$HOME/.cache}/jacklinkd.log" 2>&1 &
-fi
+# Audio: PipeASIO -> PipeWire (native client, no JACK layer). Defaults live in
+# ~/.config/pipeasio/config.ini (seeded by setup-prefix.sh); PIPEASIO_* variables
+# override per launch — raise PIPEASIO_PREFERRED_BUFFERSIZE to 512 if crackles.
 
 require_live() {
     [ -n "$EXE" ] && return 0

@@ -19,7 +19,7 @@ Place this installer + an Ableton Live zip file downloaded from Ableton.com in t
 - File dialogues including open/save dialogs are handled by your system's native file picker. 
 - Dark/light theme mode that follows your system's settings.
 - System font support, Display Ableton's AI with your desktop interface fonts.
-- Low-latency audio via autobuilt WineASIO → JACK/PipeWire at 256 frames, with additional hardening to prevent crashes.
+- Low-latency audio via autobuilt PipeASIO, a native PipeWire ASIO driver, at 256 frames, with additional hardening to prevent crashes. Live can record from any PipeWire source, no JACK layer needed.
 - VST3/JUCE/OpenGL editor windows render, take input, and scale correctly.
 - HiDPI support display scale auto-detected and recalibrated on every launch.
 - Extensions SDK support.
@@ -53,9 +53,9 @@ File an issue on GitHub, there's some diagnostics scripts that will help diagnos
 A few more things to do after you launch for the first time:
 
 1. Ableton's Settings → untick Auto-Scale Plugin Window (prevents a plugin-window resize loop).
-2. Preferences → Audio → Driver Type ASIO → Device WineASIO.
+2. Preferences → Audio → Driver Type ASIO → Device PipeASIO.
 
-WineASIO can be tempermental. If you encounter any unexpected behaviour, open an issue or +1 an existing one and I'll fix as a priority!
+If you encounter any unexpected audio behaviour, open an issue or +1 an existing one and I'll fix as a priority!
 
 ## Push 1 + 2 support
 
@@ -73,13 +73,13 @@ Requirements are:
 - x86_64, glibc 2.35+ (any 2022+ distro)
 - GNOME or KDE 
 - `zstd`
-- `pipewire-jack`
+- `pipewire` 0.3.56 or newer (1.6+ recommended for the lowest latency)
 - `cabextract`,
 - `binutils`
 
 ## Project structure
 
-- [patches/](patches/): the Wine patch series + the wineasio series
+- [patches/](patches/): the Wine patch series + the pipeasio series
 - [scripts/](scripts/): install, prefix setup, launcher
 - [vendor/](vendor/): pinned build inputs
 - [notes/](notes/): patch notes and investigations
@@ -120,6 +120,7 @@ Mostly unnecessary. But in case you need them:
 - `ABLETON_DPI_MODE` `auto` | `preserve` | `100` | `fractional`
 - `ABLETON_THEME_MODE` `auto` | `dark` | `light` | `preserve` — the launcher syncs Live's light/dark theme key to the desktop scheme on every start; this overrides it
 - `ABLETON_LIVE_EXE` full path to a Live exe inside the prefix, when more than one edition/version is installed (default: the newest found)
+- `PIPEASIO_*` audio driver overrides, e.g. `PIPEASIO_PREFERRED_BUFFERSIZE=512` if you hear crackles; defaults live in `~/.config/pipeasio/config.ini`
 - `ENGINE=docker` for `build.sh` / `make-installer.sh`
 
 ### Steam Deck
@@ -129,7 +130,7 @@ Desktop Mode only. Add the host packages once, and (unfortunately) again after e
 ```bash
 sudo steamos-readonly disable
 sudo pacman-key --init && sudo pacman-key --populate archlinux holo
-sudo pacman -S cabextract binutils pipewire-jack
+sudo pacman -S cabextract binutils
 sudo steamos-readonly enable
 ```
 

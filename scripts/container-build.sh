@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs inside the Ubuntu 22.04 container (invoked by build.sh); /src = repo (ro), /out = dist/ (rw).
-# Produces a relocatable patched-Wine tarball with WineASIO baked in.
+# Produces a relocatable patched-Wine tarball with PipeASIO baked in.
 set -euo pipefail
 
 SRC=/src
@@ -114,29 +114,52 @@ bridge_unix_sha="$(sha256sum "$bridge_unix" | awk '{print $1}')"
 portal_unix_sha="$(sha256sum "$portal_unix" | awk '{print $1}')"
 echo "   libusb bridge: PE $bridge_pe_sha / Unix $bridge_unix_sha"
 
-echo "== [4/8] build WineASIO 1.3.0 against THIS Wine (ABI-matched) =="
-mkdir -p "$WORK/wineasio"
-tar xzf "$SRC/vendor/wineasio-1.3.0.tar.gz" -C "$WORK/wineasio" --strip-components=1
-cd "$WORK/wineasio"
-# Apply the wineasio patch series (patches/wineasio/).
-nasio="$(ls "$SRC"/patches/wineasio/*.patch 2>/dev/null | wc -l)"
-[ "$nasio" -gt 0 ] || { echo "!! no wineasio patches found in $SRC/patches/wineasio" >&2; exit 1; }
-for p in "$SRC"/patches/wineasio/*.patch; do
+echo "== [4/8] build PipeASIO 1.2.2 against THIS Wine (ABI-matched) =="
+mkdir -p "$WORK/pipeasio"
+tar xzf "$SRC/vendor/pipeasio-1.2.2.tar.gz" -C "$WORK/pipeasio" --strip-components=1
+cd "$WORK/pipeasio"
+# Apply the pipeasio patch series (patches/pipeasio/).
+nasio="$(ls "$SRC"/patches/pipeasio/*.patch 2>/dev/null | wc -l)"
+[ "$nasio" -gt 0 ] || { echo "!! no pipeasio patches found in $SRC/patches/pipeasio" >&2; exit 1; }
+for p in "$SRC"/patches/pipeasio/*.patch; do
     echo "   applying $(basename "$p")"
     patch -p1 --no-backup-if-mismatch -i "$p"
 done
 export PATH="$PREFIX_ROOT/bin:$PATH"          # this Wine's winegcc/winebuild take PATH priority
-# 64-bit only (Live 12 is 64-bit): compile against this Wine's headers, link with its winegcc/winebuild.
-make 64 \
-    WINEBUILD_INCLUDEDIR="$PREFIX_ROOT/include/wine" \
-    WINEBUILD_LIBDIR="$PREFIX_ROOT/lib/wine/x86_64-unix" \
-    CFLAGS="-I$PREFIX_ROOT/include/wine/windows"
-install -m644 build64/wineasio64.dll    "$PREFIX_ROOT/lib/wine/x86_64-windows/wineasio64.dll"
-install -m644 build64/wineasio64.dll.so "$PREFIX_ROOT/lib/wine/x86_64-unix/wineasio64.dll.so"
-# Wine resolves wineasio64.dll to builtin name "wineasio.dll" (from its spec file) and looks for the
+# 64-bit only (Live 12 is 64-bit). Upstream builds with CMake; this drives the
+# same five-object build directly, against this Wine's headers and the vendored
+# PipeWire SDK (Containerfile). The SDK is link-time only: the .so records
+# DT_NEEDED libpipewire-0.3.so.0 and resolves against the host PipeWire at
+# runtime (floor 0.3.56 for the thread-utils API).
+PW_SDK=/opt/pipewire-sdk
+mkdir -p build64
+for f in asio audio config main regsvr; do
+    gcc -c -o "build64/$f.o" "src/$f.c" \
+        -Iinclude \
+        -I"$PW_SDK/usr/include/pipewire-0.3" -I"$PW_SDK/usr/include/spa-0.2" \
+        -I"$PREFIX_ROOT/include" -I"$PREFIX_ROOT/include/wine" \
+        -I"$PREFIX_ROOT/include/wine/windows" \
+        -D_REENTRANT -Wall -pipe -fno-strict-aliasing -Wwrite-strings \
+        -Wpointer-arith -Werror=implicit-function-declaration \
+        -fPIC -O2 -DNDEBUG -fvisibility=hidden
+done
+winebuild -m64 --dll --fake-module -E pipeasio.dll.spec build64/*.o -o build64/pipeasio64.dll
+winegcc -shared pipeasio.dll.spec build64/*.o \
+    -L"$PW_SDK/usr/lib/x86_64-linux-gnu" \
+    -lodbc32 -lole32 -luuid -lwinmm -luser32 -lpipewire-0.3 \
+    -o build64/pipeasio64.dll.so
+# Must link the host's PipeWire by soname, no SDK path baked in.
+readelf -d build64/pipeasio64.dll.so | grep -F 'Shared library: [libpipewire-0.3.so.0]' >/dev/null
+if readelf -d build64/pipeasio64.dll.so | grep -qE 'RPATH|RUNPATH'; then
+    echo "!! pipeasio64.dll.so carries an rpath into the build container" >&2
+    exit 1
+fi
+install -m644 build64/pipeasio64.dll    "$PREFIX_ROOT/lib/wine/x86_64-windows/pipeasio64.dll"
+install -m644 build64/pipeasio64.dll.so "$PREFIX_ROOT/lib/wine/x86_64-unix/pipeasio64.dll.so"
+# Wine resolves pipeasio64.dll to builtin name "pipeasio.dll" (from its spec file) and looks for the
 # unix half under that name — install both names or LoadLibrary fails with STATUS_DLL_NOT_FOUND.
-install -m644 build64/wineasio64.dll    "$PREFIX_ROOT/lib/wine/x86_64-windows/wineasio.dll"
-install -m644 build64/wineasio64.dll.so "$PREFIX_ROOT/lib/wine/x86_64-unix/wineasio.dll.so"
+install -m644 build64/pipeasio64.dll    "$PREFIX_ROOT/lib/wine/x86_64-windows/pipeasio.dll"
+install -m644 build64/pipeasio64.dll.so "$PREFIX_ROOT/lib/wine/x86_64-unix/pipeasio.dll.so"
 
 echo "== [5/8] strip + prune (dev files served their purpose in [4/8]; nothing below runs on user machines) =="
 # Debug info is ~3/4 of every PE builtin and ~5/6 of the unix halves. Exports,
@@ -158,18 +181,18 @@ bridge_pe_sha="$(sha256sum "$bridge_pe" | awk '{print $1}')"
 bridge_unix_sha="$(sha256sum "$bridge_unix" | awk '{print $1}')"
 portal_unix_sha="$(sha256sum "$portal_unix" | awk '{print $1}')"
 
-wineasio_pe="$PREFIX_ROOT/lib/wine/x86_64-windows/wineasio64.dll"
-wineasio_unix="$PREFIX_ROOT/lib/wine/x86_64-unix/wineasio64.dll.so"
-test -s "$wineasio_pe"
-test -s "$wineasio_unix"
-wineasio_pe_sha="$(sha256sum "$wineasio_pe" | awk '{print $1}')"
-wineasio_unix_sha="$(sha256sum "$wineasio_unix" | awk '{print $1}')"
-echo "   WineASIO: PE $wineasio_pe_sha / Unix $wineasio_unix_sha"
+pipeasio_pe="$PREFIX_ROOT/lib/wine/x86_64-windows/pipeasio64.dll"
+pipeasio_unix="$PREFIX_ROOT/lib/wine/x86_64-unix/pipeasio64.dll.so"
+test -s "$pipeasio_pe"
+test -s "$pipeasio_unix"
+pipeasio_pe_sha="$(sha256sum "$pipeasio_pe" | awk '{print $1}')"
+pipeasio_unix_sha="$(sha256sum "$pipeasio_unix" | awk '{print $1}')"
+echo "   PipeASIO: PE $pipeasio_pe_sha / Unix $pipeasio_unix_sha"
 
 echo "== [6/8] package =="
 # Stamp per-patch sha256s into the tree; build-audit.sh diffs this against patches/SERIES.sha256.
 stack_stamp="$PREFIX_ROOT/ABLETON-WINE-PATCH-STACK.txt"
-( cd "$SRC/patches" && sha256sum 00*.patch wineasio/*.patch ) > "$stack_stamp"
+( cd "$SRC/patches" && sha256sum 00*.patch pipeasio/*.patch ) > "$stack_stamp"
 stack_sha="$(sha256sum "$stack_stamp" | awk '{print $1}')"
 build_info="$PREFIX_ROOT/ABLETON-WINE-BUILD-INFO.txt"
 {
@@ -177,18 +200,19 @@ build_info="$PREFIX_ROOT/ABLETON-WINE-BUILD-INFO.txt"
     echo "wine:         $("$PREFIX_ROOT/bin/wine" --version)"
     echo "base:         giang17/wine d2d1-dcomp-11.11 @ 7ea0c8b7"
     echo "prefix:       $CONFIGURE_PREFIX (configure-time only; tarball is relocatable, see relocation gate)"
-    echo "patches:      $((npatch + nasio))"     # wine series + wineasio series
+    echo "patches:      $((npatch + nasio))"     # wine series + pipeasio series
     echo "wine-patches: $npatch"
-    echo "wineasio-patches: $nasio"
+    echo "pipeasio-patches: $nasio"
     echo "patch-head:   $patch_head"
     echo "patch-stack:  $stack_sha"
-    echo "wineasio:     1.3.0"
+    echo "pipeasio:     1.2.2"
+    echo "pipewire-floor: 0.3.56 (pw_context_get_data_loop, pw_data_loop_set_thread_utils)"
     echo "ntsync:       yes (vendored linux/ntsync.h $ntsync_hdr_sha)"
     echo "libusb-pe:    $bridge_pe_sha"
     echo "libusb-unix:  $bridge_unix_sha"
     echo "portal-unix:  $portal_unix_sha"
-    echo "wineasio-pe:  $wineasio_pe_sha"
-    echo "wineasio-unix: $wineasio_unix_sha"
+    echo "pipeasio-pe:  $pipeasio_pe_sha"
+    echo "pipeasio-unix: $pipeasio_unix_sha"
     echo "built-on:     Ubuntu 22.04 (glibc 2.35)"
 } > "$build_info"
 cp "$build_info" "$OUT/BUILD-INFO-${VERSION}.txt"
@@ -196,7 +220,7 @@ cp "$build_info" "$OUT/BUILD-INFO.txt"
 tarball="$OUT/${NAME}-${VERSION}.tar.zst"
 # --long=27 (128 MiB window, zstd's default decode limit — no flags needed to unpack)
 # lets the i386/x86_64 builtin pairs dedup against each other.
-tar -C "$(dirname "$PREFIX_ROOT")" -c "$NAME" | zstd -T0 -19 --long=27 -q -o "$tarball"
+tar -C "$(dirname "$PREFIX_ROOT")" -c "$NAME" | zstd -T0 -19 --long=27 -q -f -o "$tarball"
 ( cd "$OUT" && sha256sum "$(basename "$tarball")" > "$(basename "$tarball").sha256" )
 
 echo "== [7/8] relocation + registration gate: run the packaged tree from a random path =="
@@ -206,16 +230,25 @@ reloc="$(mktemp -d /tmp/reloc-gate.XXXXXX)"
 tar -C "$reloc" -I zstd -xf "$tarball"
 WINEPREFIX="$reloc/prefix" WINEDEBUG=-all \
     "$reloc/$NAME/bin/wine" cmd /c "echo relocation-ok" 2>/dev/null | grep -q relocation-ok
-# Register WineASIO through Live's load path; catches builtin-name mismatches presence checks miss.
+# Register PipeASIO through Live's load path; catches builtin-name mismatches presence checks miss.
+# Registration only loads the DLL and writes registry keys, but dlopen of the
+# unix half still needs libpipewire-0.3.so.0 to resolve. The SDK's .so targets
+# a newer glibc than this container, so satisfy the loader with a stub that
+# exports exactly the pw_ symbols the driver references.
+pwstub="$(mktemp -d)"
+nm -D "$reloc/$NAME/lib/wine/x86_64-unix/pipeasio64.dll.so" \
+    | awk '$1 == "U" && $2 ~ /^pw_/ { print "void " $2 "(void) {}" }' > "$pwstub/stub.c"
+gcc -shared -fPIC -Wl,-soname,libpipewire-0.3.so.0 -o "$pwstub/libpipewire-0.3.so.0" "$pwstub/stub.c"
 WINEPREFIX="$reloc/prefix" WINEDEBUG=-all \
-    "$reloc/$NAME/bin/wine" regsvr32 wineasio64.dll >/dev/null 2>&1
+    LD_LIBRARY_PATH="$pwstub" \
+    "$reloc/$NAME/bin/wine" regsvr32 pipeasio64.dll >/dev/null 2>&1
 WINEPREFIX="$reloc/prefix" WINEDEBUG=-all \
     "$reloc/$NAME/bin/wine" reg query \
-    'HKCR\CLSID\{48D0C522-BFCC-45CC-8B84-17F25F33E6E8}\InprocServer32' >/dev/null 2>&1
+    'HKCR\CLSID\{2D3CA9E2-1193-4C5D-B5FD-38798F3DC074}\InprocServer32' >/dev/null 2>&1
 WINEPREFIX="$reloc/prefix" "$reloc/$NAME/bin/wineserver" -k 2>/dev/null || true
 WINEPREFIX="$reloc/prefix" "$reloc/$NAME/bin/wineserver" -w 2>/dev/null || true
 rm -rf "$reloc"
-echo "   relocation + registration gate passed (cmd.exe ran, WineASIO registered)"
+echo "   relocation + registration gate passed (cmd.exe ran, PipeASIO registered)"
 
 echo "== [8/8] build audit: every patch verified against the shipped tarball =="
 bash "$SRC/scripts/build-audit.sh" "$tarball"

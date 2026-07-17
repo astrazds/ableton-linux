@@ -68,10 +68,10 @@ for required in \
     lib/wine/x86_64-unix/libusb-1.0.so \
     lib/wine/x86_64-unix/comdlg32.so \
     lib/wine/x86_64-unix/winealsa.so \
-    lib/wine/x86_64-windows/wineasio64.dll \
-    lib/wine/x86_64-windows/wineasio.dll \
-    lib/wine/x86_64-unix/wineasio64.dll.so \
-    lib/wine/x86_64-unix/wineasio.dll.so; do
+    lib/wine/x86_64-windows/pipeasio64.dll \
+    lib/wine/x86_64-windows/pipeasio.dll \
+    lib/wine/x86_64-unix/pipeasio64.dll.so \
+    lib/wine/x86_64-unix/pipeasio.dll.so; do
     [ -s "$candidate/$required" ] || { echo "!! package is missing $required" >&2; exit 1; }
 done
 if [ -e "$candidate/lib/wine/i386-windows/libusb-1.0.dll" ] || \
@@ -88,6 +88,11 @@ if command -v readelf >/dev/null && command -v strings >/dev/null; then
     strings "$candidate/lib/wine/x86_64-unix/comdlg32.so" | \
         grep -F 'org.freedesktop.portal.FileChooser' >/dev/null || {
             echo "!! package comdlg32 lacks the XDG portal backend" >&2
+            exit 1
+        }
+    readelf -d "$candidate/lib/wine/x86_64-unix/pipeasio64.dll.so" | \
+        grep -F 'Shared library: [libpipewire-0.3.so.0]' >/dev/null || {
+            echo "!! PipeASIO is not linked to host libpipewire-0.3.so.0" >&2
             exit 1
         }
 else

@@ -27,10 +27,10 @@ for required in \
     lib/wine/x86_64-unix/comdlg32.so \
     lib/wine/x86_64-windows/libusb-1.0.dll \
     lib/wine/x86_64-unix/libusb-1.0.so \
-    lib/wine/x86_64-windows/wineasio64.dll \
-    lib/wine/x86_64-windows/wineasio.dll \
-    lib/wine/x86_64-unix/wineasio64.dll.so \
-    lib/wine/x86_64-unix/wineasio.dll.so; do
+    lib/wine/x86_64-windows/pipeasio64.dll \
+    lib/wine/x86_64-windows/pipeasio.dll \
+    lib/wine/x86_64-unix/pipeasio64.dll.so \
+    lib/wine/x86_64-unix/pipeasio.dll.so; do
     [ -s "$WINE_ROOT/$required" ] || { echo "!! packaged runtime is missing $required"; exit 1; }
 done
 
@@ -265,11 +265,34 @@ fi
 wine reg add 'HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' /v EnableTransparency /t REG_DWORD /d 0 /f
 "$WINESERVER" -w
 
-echo "== [4/5] register packaged WineASIO =="
-ldconfig -p 2>/dev/null | grep -F 'libjack.so.0' >/dev/null || \
-  echo "!! host libjack.so.0 not found; install pipewire-jack or JACK2"
-wine regsvr32 wineasio64.dll
+echo "== [4/5] register packaged PipeASIO =="
+ldconfig -p 2>/dev/null | grep -F 'libpipewire-0.3.so.0' >/dev/null || \
+  echo "!! host libpipewire-0.3.so.0 not found; install pipewire (0.3.56 or newer, 1.6+ recommended)"
+# Pre-2026-07 runtimes shipped WineASIO; drop its registration and the stale
+# system32 placeholders so nothing references the removed driver. Harmless on
+# fresh prefixes.
+wine reg delete 'HKLM\Software\ASIO\WineASIO' /f >/dev/null 2>&1 || true
+wine reg delete 'HKCR\CLSID\{48D0C522-BFCC-45CC-8B84-17F25F33E6E8}' /f >/dev/null 2>&1 || true
+rm -f "$WINEPREFIX"/drive_c/windows/system32/wineasio64.dll \
+      "$WINEPREFIX"/drive_c/windows/system32/wineasio.dll
+wine regsvr32 pipeasio64.dll
 "$WINESERVER" -w
+
+# Seed the driver defaults once; the file is the config surface (PIPEASIO_*
+# environment variables override it per launch, see the README).
+pipeasio_cfg="${XDG_CONFIG_HOME:-$HOME/.config}/pipeasio/config.ini"
+if [ ! -s "$pipeasio_cfg" ]; then
+    mkdir -p "$(dirname "$pipeasio_cfg")"
+    cat > "$pipeasio_cfg" <<'EOF'
+[pipeasio]
+inputs = 2
+outputs = 2
+buffer_size = 256
+fixed_buffer_size = true
+auto_connect = true
+EOF
+    echo "   seeded $pipeasio_cfg (2 in / 2 out, fixed 256-frame buffer)"
+fi
 
 echo "== [5/5] set portal policy and scope Push 2 bridge to its helper =="
 # Default only — a policy the user set with set-file-portal-policy survives re-runs.
@@ -315,7 +338,7 @@ Remaining steps (you supply Ableton + your own license):
   3. Authorize Live with your own account (binds to this prefix's MachineGuid).
   4. In Live: Options > uncheck "Auto-Scale Plugin Window"
      (prevents a plugin-window resize loop with DPI-unaware plugin UIs).
-  5. Audio: Preferences > Audio > Driver Type: ASIO > Device: WineASIO.
-     WineASIO routes to JACK — on PipeWire, install 'pipewire-jack'.
+  5. Audio: Preferences > Audio > Driver Type: ASIO > Device: PipeASIO.
+     PipeASIO is a native PipeWire client — no JACK layer involved.
 ────────────────────────────────────────────────────────────────────────
 EOF

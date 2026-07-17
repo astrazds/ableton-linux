@@ -68,7 +68,7 @@ Use the [quick start](README.md) for the automated tests. Then run the checks be
 | 06 | Files | Open, Save As, folder selection, Cancel and audio export all work. Reopen the exported file. |
 | 07 | Plug-ins | Scan the agreed VST3 plug-ins, open their windows, save a set containing them and reopen it. |
 | 08 | Max for Live | Open the agreed devices, change settings, save the set and reopen it. |
-| 09 | Audio | Select WineASIO, play for ten minutes at 48 kHz and 256 frames, then record and play audio. |
+| 09 | Audio | Select PipeASIO, play for ten minutes at 48 kHz and 256 frames, then record and play audio. |
 | 10 | MIDI | Test notes, controls and output. Unplug and reconnect the controller while Live is open. |
 | 11 | Stability | Use the demo set, plug-ins and controls for 30 minutes without a crash, hang or lost device. |
 | 12 | Update | Install a newer build, switch back to the previous build, then remove and reinstall the package. The Wine folder and Live settings remain. |
