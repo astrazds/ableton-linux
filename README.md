@@ -12,7 +12,7 @@ Place this installer + an Ableton Live zip file downloaded from Ableton.com in t
 
 ## Features
 
-- Live 12 Suite and Beta support
+- All Live 12 editions (Intro, Standard, Suite, Trial) and Beta support — the installer and launcher detect whichever you have
 - Push 1 + 2 support.
 - Device recovery: audio and MIDI devices (Push included) survive in-session disconnect and reconnect.
 - Experimental Max/MSP and Max for Live support.
@@ -49,11 +49,11 @@ A few more things to do after you launch for the first time:
 1. Ableton's Settings → untick Auto-Scale Plugin Window (prevents a plugin-window resize loop).
 2. Preferences → Audio → Driver Type ASIO → Device WineASIO.
 
-WineASIO can be tempermental; If you have any issues with WineASIO, Make a github issue or +1 an existing one and I'll fix as a priority!
+WineASIO can be tempermental. If you encounter any unexpected behaviour, open an issue or +1 an existing one and I'll fix as a priority!
 
 ## Push 1 + 2 support
 
-This is built in. Use Preferences → Link, Tempo & MIDI → exactly one `Push2` row, Live Port for both input and output. Like all other MIDI and Audio devices, Push will survive in-session disconnects. 
+This is built in. Use Preferences → Link, Tempo & MIDI → enable one `Push2` row, Live Port for both input and output, and the remote toggles. Like all other MIDI and Audio devices, Push will survive in-session disconnects. 
 
 
 ## Development
@@ -101,15 +101,16 @@ It verifies itself, installs the runtime, detects the display scale, creates the
 
 #### Display scale
 
-`setup-prefix.sh` and the launcher auto-detect the display scale (GNOME, KDE, sway, Hyprland, X11 `Xft.dpi`); the launcher recalibrates the prefix DPI on every start, so switching monitors needs only a Live restart. Only 100% and 125% are calibrated; anything else is preserved. Override with `ABLETON_DPI_MODE`.
+`setup-prefix.sh` and the launcher auto-detect the display scale (GNOME, KDE, sway, Hyprland, X11 `Xft.dpi`); the launcher recalibrates the prefix DPI on every start. Unfortunately, switching monitors still needs a Live restart if those monitors have different DPIs. You can manually override the default scaling behaviours with `ABLETON_DPI_MODE`.
 
-### Environment variables
+### Other environment variables
 
 Mostly unnecessary. But in case you need them: 
 
 - `ABLETON_WINE_ROOT` runtime path (default `~/.local/opt/wine-d2d1-nspa-11.11`)
 - `ABLETON_WINEPREFIX` prefix path (default `~/.wine-ableton`)
 - `ABLETON_DPI_MODE` `auto` | `preserve` | `100` | `fractional`
+- `ABLETON_LIVE_EXE` full path to a Live exe inside the prefix, when more than one edition/version is installed (default: the newest found)
 - `ENGINE=docker` for `build.sh` / `make-installer.sh`
 
 ### Steam Deck

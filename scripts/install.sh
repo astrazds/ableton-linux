@@ -51,7 +51,7 @@ else
     echo "   (no .sha256 next to tarball — skipping)"
 fi
 
-if pgrep -af '[A]bleton Live 12 Suite.exe|[P]ush2DisplayProcess.exe' >/dev/null 2>&1 || \
+if pgrep -af '[A]bleton Live.*\.exe|[P]ush2DisplayProcess.exe' >/dev/null 2>&1 || \
    pgrep -af "$OPT/$NAME" >/dev/null 2>&1; then
     echo "!! the installed Ableton Wine is still running — close Live, wait a few seconds, and rerun" >&2
     exit 1

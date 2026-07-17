@@ -31,7 +31,13 @@ done
 
 # DPI blocks: 100% -> LogPixels=96 + no IFEO dpiAwareness; 125% -> LogPixels=192 + IFEO=2. auto applies
 # the detected block on a fresh prefix, preserves an existing one, refuses uncalibrated/undetectable scales.
-ifeo_key='HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\Ableton Live 12 Suite.exe'
+# The dpiAwareness IFEO is keyed on the exe name, so it is applied per installed Live (any edition);
+# on a fresh prefix Live isn't installed yet — the launcher applies it on every start.
+ifeo_root='HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options'
+live_exe_names() {   # basenames of every Live exe installed in this prefix
+    ls "$WINEPREFIX"/drive_c/ProgramData/Ableton/*/Program/"Ableton Live"*.exe 2>/dev/null \
+        | while IFS= read -r f; do basename "$f"; done
+}
 
 # Shared display-scale detection (see detect-scale.sh).
 . "$here/detect-scale.sh"
@@ -46,17 +52,21 @@ block_for_scale() {  # scale -> calibrated block name, fails on uncalibrated
 }
 
 current_dpi_block() {  # what an EXISTING prefix holds: 100 | fractional | custom
-    local lp ifeo=absent
+    local lp ifeo=absent name installs=0
     lp="$(wine reg query 'HKCU\Control Panel\Desktop' /v LogPixels 2>/dev/null \
           | awk '$1=="LogPixels"{gsub(/\r/,"",$3); print tolower($3)}')"   # reg output is CRLF
     [ -n "$lp" ] || lp=0x60          # wineboot default is 96
-    if wine reg query "$ifeo_key" /v dpiAwareness >/dev/null 2>&1; then
-        ifeo=present
-    fi
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        installs=1
+        if wine reg query "$ifeo_root\\$name" /v dpiAwareness >/dev/null 2>&1; then
+            ifeo=present
+        fi
+    done < <(live_exe_names)
     if [ "$lp" = 0x60 ] && [ "$ifeo" = absent ]; then
         echo 100
-    elif [ "$lp" = 0xc0 ] && [ "$ifeo" = present ]; then
-        echo fractional
+    elif [ "$lp" = 0xc0 ] && { [ "$ifeo" = present ] || [ "$installs" -eq 0 ]; }; then
+        echo fractional    # no Live installed yet: LogPixels alone decides; the launcher adds the IFEO
     else
         echo custom
     fi
@@ -192,12 +202,21 @@ echo "== [3/5] DPI policy ($dpi_mode -> $dpi_block) =="
 case "$dpi_block" in
   100)
     wine reg add 'HKCU\Control Panel\Desktop' /v LogPixels /t REG_DWORD /d 96 /f
-    wine reg delete "$ifeo_key" /v dpiAwareness /f >/dev/null 2>&1 || true  # reg.exe errors land on stdout
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        wine reg delete "$ifeo_root\\$name" /v dpiAwareness /f >/dev/null 2>&1 || true  # reg.exe errors land on stdout
+    done < <(live_exe_names)
     check_mutter_knob 100
     ;;
   fractional)
     wine reg add 'HKCU\Control Panel\Desktop' /v LogPixels /t REG_DWORD /d 192 /f
-    wine reg add "$ifeo_key" /v dpiAwareness /t REG_DWORD /d 2 /f
+    ifeo_set=0
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        ifeo_set=1
+        wine reg add "$ifeo_root\\$name" /v dpiAwareness /t REG_DWORD /d 2 /f
+    done < <(live_exe_names)
+    [ "$ifeo_set" -eq 1 ] || echo "   (Live not installed yet — the launcher sets its per-app DPI flag on first start)"
     check_mutter_knob fractional
     ;;
   preserve)
@@ -252,10 +271,10 @@ cat <<EOF
 ────────────────────────────────────────────────────────────────────────
 Remaining steps (you supply Ableton + your own license):
 
-  1. Install Live 12 through THIS wine (plain wine reads WINEPREFIX, not
-     the ABLETON_* launcher variables):
+  1. Install Live (any edition) through THIS wine (plain wine reads
+     WINEPREFIX, not the ABLETON_* launcher variables):
        WINEPREFIX=$WINEPREFIX \\
-       $WINE_ROOT/bin/wine "/path/to/Ableton Live 12 Suite Installer.exe"
+       $WINE_ROOT/bin/wine "/path/to/Ableton Live NN Edition Installer.exe"
 
   2. Launch:            ableton-live
   3. Authorize Live with your own account (binds to this prefix's MachineGuid).

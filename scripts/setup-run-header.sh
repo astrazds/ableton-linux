@@ -41,30 +41,66 @@ done
 say "== Ableton-on-Wine installer $VERSION =="
 
 # --- find the Ableton payload next to this file, up front ---------------------
+# Any edition (Intro/Lite/Standard/Suite/Trial) and any major version works:
+# an ableton_live*.zip straight from ableton.com, or an already-unpacked installer .exe.
 find_live_payload() {
-    live_exe=""; live_zip=""
+    live_payloads=()
     local f base
     for f in "$stick_dir"/*; do
         [ -f "$f" ] || continue
         base="$(basename "$f" | tr '[:upper:]' '[:lower:]')"
         case "$base" in
-            ableton_live_suite_12*.zip|ableton_live*12*.zip) live_zip="$f" ;;
-            *ableton*.exe|*live*.exe)                        live_exe="$f" ;;
+            ableton_live*.zip|*ableton*.exe|*live*.exe) live_payloads+=("$f") ;;
         esac
     done
+    [ "${#live_payloads[@]}" -le 1 ] || \
+        mapfile -t live_payloads < <(printf '%s\n' "${live_payloads[@]}" | sort -V)
+}
+choose_live_payload() {    # picks one of live_payloads into live_exe or live_zip
+    live_exe=""; live_zip=""
+    local n="${#live_payloads[@]}" pick ans i
+    [ "$n" -gt 0 ] || return 0
+    if [ "$n" -eq 1 ]; then
+        pick="${live_payloads[0]}"
+    elif [ -t 0 ]; then
+        say ""
+        say "More than one Ableton download is next to this file:"
+        i=1
+        for pick in "${live_payloads[@]}"; do say "  $i) $(basename "$pick")"; i=$((i+1)); done
+        while :; do
+            printf 'Which one should be installed? [1-%s, Enter = %s] ' "$n" "$n"
+            read -r ans || ans=""
+            [ -n "$ans" ] || ans="$n"
+            case "$ans" in
+                *[!0-9]*) ;;
+                *) [ "$ans" -ge 1 ] && [ "$ans" -le "$n" ] && break ;;
+            esac
+            say "Please answer with a number between 1 and $n."
+        done
+        pick="${live_payloads[$((ans-1))]}"
+    else
+        pick="${live_payloads[$((n-1))]}"
+        say "-- several Ableton downloads found; picking the newest: $(basename "$pick")"
+    fi
+    case "$(basename "$pick" | tr '[:upper:]' '[:lower:]')" in
+        *.zip) live_zip="$pick" ;;
+        *)     live_exe="$pick" ;;
+    esac
 }
 manual_install=1
 if [ "$mode" = install ] && [ "$do_launch" -eq 1 ]; then
     find_live_payload
+    choose_live_payload
     if [ -z "$live_exe$live_zip" ] && [ -t 0 ]; then
         say ""
         say "No Ableton installer found next to this file"
-        say "(looked for ableton_live_suite_12*.zip or an Ableton .exe in $stick_dir)."
+        say "(looked for an ableton_live*.zip — any edition — or an Ableton .exe in $stick_dir)."
         say "Put it here and press Enter. Or press Enter without it — the"
         say "manual install commands are printed at the end."
         printf '> '
         read -r _ || true
         find_live_payload
+        choose_live_payload
     fi
     if [ -n "$live_exe$live_zip" ]; then
         manual_install=0
@@ -201,8 +237,8 @@ if [ "$live_installed" -eq 1 ]; then
     say "Done — Ableton Live is installed."
 else
     say "Done, except Ableton Live itself. To install it manually:"
-    say "  1) unpack your ableton_live_suite_12*.zip:"
-    say "       unzip /path/to/ableton_live_suite_12*.zip -d ~/live-installer"
+    say "  1) unpack your Ableton zip (any edition):"
+    say "       unzip /path/to/ableton_live*.zip -d ~/live-installer"
     say "       (no unzip? try: bsdtar -xf FILE.zip -C ~/live-installer)"
     say "  2) run the installer through this Wine, from inside that directory:"
     say "       cd ~/live-installer && WINEPREFIX=~/.wine-ableton \\"

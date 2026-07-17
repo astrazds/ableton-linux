@@ -29,7 +29,7 @@ while [ $SECONDS -lt $deadline ]; do
     if printf '%s' "$new" | grep -qa "Open: finished"; then
         verdict=opened; break
     fi
-    if ! pgrep -f "Ableton Live 12 Suite.exe" >/dev/null 2>&1; then
+    if ! pgrep -f "Ableton Live.*\.exe" >/dev/null 2>&1; then
         verdict=died; break
     fi
 done
