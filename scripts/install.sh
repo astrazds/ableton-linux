@@ -51,7 +51,7 @@ else
     echo "   (no .sha256 next to tarball — skipping)"
 fi
 
-if pgrep -af '[A]bleton Live 12 Suite.exe|[P]ush2DisplayProcess.exe' >/dev/null 2>&1 || \
+if pgrep -af '[A]bleton Live.*\.exe|[P]ush2DisplayProcess.exe' >/dev/null 2>&1 || \
    pgrep -af "$OPT/$NAME" >/dev/null 2>&1; then
     echo "!! the installed Ableton Wine is still running — close Live, wait a few seconds, and rerun" >&2
     exit 1
@@ -68,10 +68,10 @@ for required in \
     lib/wine/x86_64-unix/libusb-1.0.so \
     lib/wine/x86_64-unix/comdlg32.so \
     lib/wine/x86_64-unix/winealsa.so \
-    lib/wine/x86_64-windows/wineasio64.dll \
-    lib/wine/x86_64-windows/wineasio.dll \
-    lib/wine/x86_64-unix/wineasio64.dll.so \
-    lib/wine/x86_64-unix/wineasio.dll.so; do
+    lib/wine/x86_64-windows/pipeasio64.dll \
+    lib/wine/x86_64-windows/pipeasio.dll \
+    lib/wine/x86_64-unix/pipeasio64.dll.so \
+    lib/wine/x86_64-unix/pipeasio.dll.so; do
     [ -s "$candidate/$required" ] || { echo "!! package is missing $required" >&2; exit 1; }
 done
 if [ -e "$candidate/lib/wine/i386-windows/libusb-1.0.dll" ] || \
@@ -88,6 +88,11 @@ if command -v readelf >/dev/null && command -v strings >/dev/null; then
     strings "$candidate/lib/wine/x86_64-unix/comdlg32.so" | \
         grep -F 'org.freedesktop.portal.FileChooser' >/dev/null || {
             echo "!! package comdlg32 lacks the XDG portal backend" >&2
+            exit 1
+        }
+    readelf -d "$candidate/lib/wine/x86_64-unix/pipeasio64.dll.so" | \
+        grep -F 'Shared library: [libpipewire-0.3.so.0]' >/dev/null || {
+            echo "!! PipeASIO is not linked to host libpipewire-0.3.so.0" >&2
             exit 1
         }
 else
@@ -113,10 +118,16 @@ if [ -e "$BIN/ableton-live" ]; then
 fi
 install -m755 "$here/ableton-live" "$BIN/ableton-live"
 
-echo "== install scale-detection lib -> ~/.local/share/ableton-wine =="
-# The launcher sources this on every start to auto-calibrate the prefix DPI.
+echo "== install detection libs -> ~/.local/share/ableton-wine =="
+# The launcher sources these on every start (DPI auto-calibration, light/dark theme sync).
 mkdir -p "$HOME/.local/share/ableton-wine"
 install -m644 "$here/detect-scale.sh" "$HOME/.local/share/ableton-wine/detect-scale.sh"
+install -m644 "$here/detect-theme.sh" "$HOME/.local/share/ableton-wine/detect-theme.sh"
+
+# Record the kit version so a later installer can tell what it is updating
+# (the kit and the repo both carry VERSION at the root).
+printf '%s\n' "$(cat "$root/VERSION" 2>/dev/null || echo unknown)" \
+    > "$HOME/.local/share/ableton-wine/VERSION"
 
 echo "== install missing desktop entries -> $APPS =="
 mkdir -p "$APPS"

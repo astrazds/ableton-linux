@@ -52,7 +52,7 @@ stays healthy.
 
 ## Caveats
 
-Any GL-rendered plugin editor is affected, not just Chow: the trigger is a GL
-client surface presented onto a depth-32 top-level, i.e. any layered high-DPI
-plugin editor in this series. The depth-32 visuals come from the
-titlebar/drop-shadow work; that feature and this fix belong together.
+Any GL-rendered plugin editor is affected, not only Chow: the trigger is a
+GL client surface presented onto a depth-32 top-level. The depth-32 visuals
+come from the titlebar/drop-shadow work; that feature and this fix belong
+together.

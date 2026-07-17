@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Ableton Live 12 launcher for the patched Wine stack.
-# Overrides: ABLETON_WINE_ROOT=/usr (stock wine), ABLETON_VDESK=2560x1600 (virtual desktop).
+# Ableton Live launcher for the patched Wine stack. Runs whichever Live edition
+# (Intro/Lite/Standard/Suite/Trial, any major version) is installed in the prefix.
+# Overrides: ABLETON_WINE_ROOT=/usr (stock wine), ABLETON_VDESK=2560x1600 (virtual desktop),
+#            ABLETON_LIVE_EXE=/path/into/prefix/.../Ableton Live NN Edition.exe (pick one install).
 set -u
 # Clear inherited Wine variables so this launch uses only the patched build.
 unset WINELOADER WINEDLLPATH WINEDLLOVERRIDES WINEARCH
@@ -16,15 +18,40 @@ export WINED3D_DCOMP_FORCE_FULL_REDRAW="${WINED3D_DCOMP_FORCE_FULL_REDRAW:-1}"
 export WINE_DISABLE_UNIX_MOUNT_REPARSE="${WINE_DISABLE_UNIX_MOUNT_REPARSE:-1}"
 export WINESERVER="$WINE_ROOT/bin/wineserver"
 
+# Locate the installed Live: any 'Ableton Live*.exe' under ProgramData/Ableton.
+# Several installs (editions or majors) may coexist; the newest wins unless pinned.
+find_live_exe() {
+    if [ -n "${ABLETON_LIVE_EXE:-}" ]; then
+        printf '%s\n' "$ABLETON_LIVE_EXE"
+        return
+    fi
+    ls "$WINEPREFIX"/drive_c/ProgramData/Ableton/*/Program/"Ableton Live"*.exe 2>/dev/null | sort -V
+}
+live_exe_unix="$(find_live_exe | tail -n 1)"
+live_count="$(find_live_exe | grep -c .)"
+EXE=""; exe_base=""
+if [ -n "$live_exe_unix" ]; then
+    exe_base="$(basename "$live_exe_unix")"
+    if [ "$live_count" -gt 1 ]; then
+        echo "ableton-live: $live_count Live installs in this prefix — launching '${exe_base%.exe}' (set ABLETON_LIVE_EXE to pick another)" >&2
+    fi
+    rel="${live_exe_unix#"$WINEPREFIX/drive_c/"}"
+    if [ "$rel" != "$live_exe_unix" ]; then
+        EXE="C:\\${rel//\//\\}"
+    else
+        EXE="$live_exe_unix"    # outside the prefix: wine resolves unix paths too
+    fi
+fi
+
 # If Live isn't running, kill any stale wineserver so the prefix binds to this build's server.
-if ! pgrep -af "Ableton Live 12 Suite.exe" 2>/dev/null | grep -q "ProgramData"; then
+if ! pgrep -af "Ableton Live.*\.exe" 2>/dev/null | grep -q "ProgramData"; then
     "$WINE_ROOT/bin/wineserver" -k 2>/dev/null || true
     /usr/bin/wineserver -k 2>/dev/null || true
 fi
 
 # Recalibrate prefix DPI to the detected scale before each launch: 1.0 -> LogPixels 96 + no IFEO;
 # 1.25 -> LogPixels 192 + IFEO=2; else preserve. ABLETON_DPI_MODE=100|fractional|preserve overrides.
-if ! pgrep -af "Ableton Live 12 Suite.exe" 2>/dev/null | grep "ProgramData" >/dev/null; then
+if ! pgrep -af "Ableton Live.*\.exe" 2>/dev/null | grep "ProgramData" >/dev/null; then
     dpi_mode="${ABLETON_DPI_MODE:-auto}"
     if [ "$dpi_mode" = auto ]; then
         dpi_lib="$HOME/.local/share/ableton-wine/detect-scale.sh"
@@ -40,22 +67,26 @@ if ! pgrep -af "Ableton Live 12 Suite.exe" 2>/dev/null | grep "ProgramData" >/de
             esac
         fi
     fi
-    dpi_ifeo='HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\Ableton Live 12 Suite.exe'
+    # The dpiAwareness IFEO is keyed on the exe name, so it follows the discovered install.
+    dpi_ifeo=""; cur_ifeo=""
+    if [ -n "$exe_base" ]; then
+        dpi_ifeo="HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\$exe_base"
+        cur_ifeo="$(awk '/^\[Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Image File Execution Options\\\\'"$exe_base"'\]/{f=1;next} /^\[/{f=0} f&&/"dpiAwareness"=dword:/{gsub(/.*dword:/,""); gsub(/\r/,""); print; exit}' "$WINEPREFIX/system.reg" 2>/dev/null || true)"
+    fi
     # Read current values from the registry files directly (no wineserver spin-up).
     cur_lp="$(awk '/^\[Control Panel\\\\Desktop\]/{f=1;next} /^\[/{f=0} f&&/"LogPixels"=dword:/{gsub(/.*dword:/,""); gsub(/\r/,""); print; exit}' "$WINEPREFIX/user.reg" 2>/dev/null || true)"
-    cur_ifeo="$(awk '/^\[Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Image File Execution Options\\\\Ableton Live 12 Suite.exe\]/{f=1;next} /^\[/{f=0} f&&/"dpiAwareness"=dword:/{gsub(/.*dword:/,""); gsub(/\r/,""); print; exit}' "$WINEPREFIX/system.reg" 2>/dev/null || true)"
     case "$dpi_mode" in
         100)
             if [ "${cur_lp:-00000060}" != 00000060 ] || [ -n "$cur_ifeo" ]; then
                 echo "ableton-live: display at 100% — recalibrating prefix DPI (LogPixels 96, no IFEO)" >&2
                 "$WINE_ROOT/bin/wine" reg add 'HKCU\Control Panel\Desktop' /v LogPixels /t REG_DWORD /d 96 /f >/dev/null 2>&1
-                "$WINE_ROOT/bin/wine" reg delete "$dpi_ifeo" /v dpiAwareness /f >/dev/null 2>&1 || true
+                [ -z "$dpi_ifeo" ] || "$WINE_ROOT/bin/wine" reg delete "$dpi_ifeo" /v dpiAwareness /f >/dev/null 2>&1 || true
             fi ;;
         fractional)
-            if [ "${cur_lp:-}" != 000000c0 ] || [ "${cur_ifeo:-}" != 00000002 ]; then
+            if [ "${cur_lp:-}" != 000000c0 ] || { [ -n "$dpi_ifeo" ] && [ "${cur_ifeo:-}" != 00000002 ]; }; then
                 echo "ableton-live: display at 125% — recalibrating prefix DPI (LogPixels 192, IFEO=2)" >&2
                 "$WINE_ROOT/bin/wine" reg add 'HKCU\Control Panel\Desktop' /v LogPixels /t REG_DWORD /d 192 /f >/dev/null 2>&1
-                "$WINE_ROOT/bin/wine" reg add "$dpi_ifeo" /v dpiAwareness /t REG_DWORD /d 2 /f >/dev/null 2>&1
+                [ -z "$dpi_ifeo" ] || "$WINE_ROOT/bin/wine" reg add "$dpi_ifeo" /v dpiAwareness /t REG_DWORD /d 2 /f >/dev/null 2>&1
             fi ;;
     esac
     # Warn if mutter's xwayland-native-scaling disagrees with the DPI set; never change it.
@@ -70,20 +101,41 @@ if ! pgrep -af "Ableton Live 12 Suite.exe" 2>/dev/null | grep "ProgramData" >/de
     fi
 fi
 
-# Audio: WineASIO -> PipeWire (JACK provider). Raise PREFERRED_BUFFERSIZE to 512 if crackles.
-export WINEASIO_NUMBER_INPUTS="${WINEASIO_NUMBER_INPUTS:-2}"
-export WINEASIO_NUMBER_OUTPUTS="${WINEASIO_NUMBER_OUTPUTS:-2}"
-export WINEASIO_FIXED_BUFFERSIZE="${WINEASIO_FIXED_BUFFERSIZE:-on}"
-export WINEASIO_PREFERRED_BUFFERSIZE="${WINEASIO_PREFERRED_BUFFERSIZE:-256}"
-export WINEASIO_CONNECT_TO_HARDWARE="${WINEASIO_CONNECT_TO_HARDWARE:-on}"
-export PIPEWIRE_LATENCY="${PIPEWIRE_LATENCY:-256/48000}"
-
-# Start jacklinkd (re-creates JACK links after device replug) if not already running.
-if command -v jacklinkd >/dev/null 2>&1 && ! pgrep -x jacklinkd >/dev/null 2>&1; then
-    nohup jacklinkd >"${XDG_CACHE_HOME:-$HOME/.cache}/jacklinkd.log" 2>&1 &
+# Mirror the host light/dark scheme into the prefix before each launch: Live's "Follow system"
+# theme reads AppsUseLightTheme, which a scripted prefix never carries (the early snapshot-based
+# installs inherited it). ABLETON_THEME_MODE=auto|dark|light|preserve overrides detection.
+if ! pgrep -af "Ableton Live.*\.exe" 2>/dev/null | grep "ProgramData" >/dev/null; then
+    theme_mode="${ABLETON_THEME_MODE:-auto}"
+    if [ "$theme_mode" = auto ]; then
+        theme_lib="$HOME/.local/share/ableton-wine/detect-theme.sh"
+        theme_mode=preserve
+        if [ -r "$theme_lib" ]; then
+            . "$theme_lib"
+            host_scheme="$(ableton_detect_theme)" || host_scheme=""
+            case "$host_scheme" in dark|light) theme_mode="$host_scheme" ;; esac
+        fi
+    fi
+    case "$theme_mode" in dark) want_light=0 ;; light) want_light=1 ;; *) want_light="" ;; esac
+    if [ -n "$want_light" ]; then
+        # Current value straight from the registry file (no wineserver spin-up when unchanged).
+        cur_light="$(awk '/^\[Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Themes\\\\Personalize\]/{f=1;next} /^\[/{f=0} f&&/"AppsUseLightTheme"=dword:/{gsub(/.*dword:/,""); gsub(/\r/,""); print; exit}' "$WINEPREFIX/user.reg" 2>/dev/null || true)"
+        if [ "${cur_light:-absent}" != "0000000$want_light" ]; then
+            echo "ableton-live: host scheme is $theme_mode — setting the prefix theme to match" >&2
+            "$WINE_ROOT/bin/wine" reg add 'HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' /v AppsUseLightTheme /t REG_DWORD /d "$want_light" /f >/dev/null 2>&1
+        fi
+    fi
 fi
 
-EXE='C:\ProgramData\Ableton\Live 12 Suite\Program\Ableton Live 12 Suite.exe'
+# Audio: PipeASIO -> PipeWire (native client, no JACK layer). Defaults live in
+# ~/.config/pipeasio/config.ini (seeded by setup-prefix.sh); PIPEASIO_* variables
+# override per launch — raise PIPEASIO_PREFERRED_BUFFERSIZE to 512 if crackles.
+
+require_live() {
+    [ -n "$EXE" ] && return 0
+    echo "ableton-live: no Ableton Live installation found in $WINEPREFIX" >&2
+    echo "ableton-live: rerun the ableton-wine-setup .run with your Ableton download (any edition) next to it, or install Live manually — see the README" >&2
+    exit 1
+}
 
 run=(wine)
 if command -v chrt >/dev/null 2>&1 && chrt -r 10 true >/dev/null 2>&1; then
@@ -91,10 +143,12 @@ if command -v chrt >/dev/null 2>&1 && chrt -r 10 true >/dev/null 2>&1; then
 fi
 
 if [ -n "${ABLETON_VDESK:-}" ]; then
-    exec "${run[@]}" explorer "/desktop=AbletonLive12,${ABLETON_VDESK}" "$EXE"
+    require_live
+    exec "${run[@]}" explorer "/desktop=AbletonLive,${ABLETON_VDESK}" "$EXE"
 elif [ "$#" -gt 0 ]; then
     # ableton:// URLs, .auz license files, .als sets from the file manager
     exec "${run[@]}" start "$@"
 else
+    require_live
     exec "${run[@]}" "$EXE"
 fi

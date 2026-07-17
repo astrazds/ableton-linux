@@ -12,7 +12,7 @@ fail() { printf '!! %s\n' "$*" >&2; exit 1; }
 
 # --- --freeze: (re)generate the frozen series manifest ------------------------
 if [ "${1:-}" = --freeze ]; then
-    new="$(cd "$root/patches" && sha256sum 00*.patch wineasio/*.patch)"
+    new="$(cd "$root/patches" && sha256sum 00*.patch pipeasio/*.patch)"
     if [ -f "$SERIES" ]; then
         say "== freeze diff (old -> new) =="
         diff -u "$SERIES" <(printf '%s\n' "$new") && say "   (no changes)"
@@ -64,7 +64,7 @@ while read -r sum file; do
         sha_ok["$file"]=0
     fi
 done < "$SERIES"
-extras="$(cd "$root/patches" && ls 00*.patch wineasio/*.patch 2>/dev/null | grep -vxF -f <(awk '{print $2}' "$SERIES") || true)"
+extras="$(cd "$root/patches" && ls 00*.patch pipeasio/*.patch 2>/dev/null | grep -vxF -f <(awk '{print $2}' "$SERIES") || true)"
 [ -z "$extras" ] && ok "no unlisted patches" "" || bad "unlisted patches present" "$extras"
 # Retired numbers stay retired (renumbering would break cross-references in patch
 # titles and notes/); a gap is fine if documented here, a dropped patch is not.
@@ -72,7 +72,7 @@ declare -A SERIES_GAPS=(
     [0027]="retired 2026-07-14 — gitignore housekeeping, no artifact effect"
 )
 seq_expect=1
-for f in $(awk '{print $2}' "$SERIES" | grep -v '^wineasio/' | sort); do
+for f in $(awk '{print $2}' "$SERIES" | grep -v '^pipeasio/' | sort); do
     num="${f%%-*}"
     printf -v want '%04d' "$seq_expect"
     while [ "$num" != "$want" ] && [ -n "${SERIES_GAPS[$want]:-}" ]; do
@@ -83,9 +83,9 @@ for f in $(awk '{print $2}' "$SERIES" | grep -v '^wineasio/' | sort); do
     [ "$num" = "$want" ] || bad "series numbering" "expected $want, found $num"
     seq_expect=$((seq_expect+1))
 done
-n_wine="$(awk '{print $2}' "$SERIES" | grep -vc '^wineasio/' || true)"
-n_asio="$(awk '{print $2}' "$SERIES" | grep -c '^wineasio/' || true)"
-say "   series: $n_wine wine patches (0001..$(printf '%04d' "$((seq_expect-1))"), documented gaps ok) + $n_asio wineasio patch(es)"
+n_wine="$(awk '{print $2}' "$SERIES" | grep -vc '^pipeasio/' || true)"
+n_asio="$(awk '{print $2}' "$SERIES" | grep -c '^pipeasio/' || true)"
+say "   series: $n_wine wine patches (0001..$(printf '%04d' "$((seq_expect-1))"), documented gaps ok) + $n_asio pipeasio patch(es)"
 
 # --- [2/4] artifact provenance stamp ------------------------------------------
 say "== [2/4] artifact provenance (patch stack stamped at build time) =="
@@ -119,9 +119,9 @@ FINGERPRINTS='
 0031|wide|lib/wine/x86_64-windows/comdlg32.dll|FileDialogPortal
 0032|ascii|lib/wine/x86_64-windows/libusb-1.0.dll|libusb_submit_transfer
 0033|ascii|lib/wine/x86_64-unix/ntdll.so|WINE_DISABLE_UNIX_MOUNT_REPARSE
-wineasio/0001|ascii|lib/wine/x86_64-unix/wineasio64.dll.so|wineasio-clamp-sample-rate
+pipeasio/0001|ascii|lib/wine/x86_64-unix/pipeasio64.dll.so|pipeasio-clamp-sample-rate
 '
-# wineasio's code is in the unix .so; the PE wineasio64.dll is a codeless fake module.
+# pipeasio's code is in the unix .so; the PE pipeasio64.dll is a codeless fake module.
 STAMP_ONLY='
 0002|logic-only (visible-rect gates; adds no string literal)
 0004|logic-only (reentrant wpchanged state)
@@ -203,10 +203,10 @@ must bin/wine
 must bin/wineserver
 must lib/wine/x86_64-unix/winealsa.so
 must lib/wine/x86_64-unix/comdlg32.so
-must lib/wine/x86_64-windows/wineasio64.dll
-must lib/wine/x86_64-unix/wineasio64.dll.so
-must lib/wine/x86_64-windows/wineasio.dll
-must lib/wine/x86_64-unix/wineasio.dll.so
+must lib/wine/x86_64-windows/pipeasio64.dll
+must lib/wine/x86_64-unix/pipeasio64.dll.so
+must lib/wine/x86_64-windows/pipeasio.dll
+must lib/wine/x86_64-unix/pipeasio.dll.so
 must lib/wine/x86_64-windows/libusb-1.0.dll
 must lib/wine/x86_64-unix/libusb-1.0.so
 for absent in lib/wine/i386-windows/libusb-1.0.dll lib/wine/i386-unix/libusb-1.0.so; do
@@ -218,6 +218,15 @@ if command -v readelf >/dev/null; then
         | grep -qF 'Shared library: [libusb-1.0.so.0]' \
         && ok "libusb-1.0.so DT_NEEDED" "host libusb-1.0.so.0" \
         || bad "libusb-1.0.so DT_NEEDED" "host libusb-1.0.so.0 not linked"
+    readelf -d "$tree/lib/wine/x86_64-unix/pipeasio64.dll.so" 2>/dev/null \
+        | grep -qF 'Shared library: [libpipewire-0.3.so.0]' \
+        && ok "pipeasio64.dll.so DT_NEEDED" "host libpipewire-0.3.so.0" \
+        || bad "pipeasio64.dll.so DT_NEEDED" "host libpipewire-0.3.so.0 not linked"
+    if readelf -d "$tree/lib/wine/x86_64-unix/pipeasio64.dll.so" 2>/dev/null | grep -qE 'RPATH|RUNPATH'; then
+        bad "pipeasio64.dll.so rpath" "carries a build-container rpath"
+    else
+        ok "pipeasio64.dll.so rpath" "none (resolves via host loader)"
+    fi
 else
     bad "readelf" "binutils missing — cannot verify bridge DT_NEEDED (install binutils)"
 fi

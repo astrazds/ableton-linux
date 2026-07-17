@@ -3,7 +3,7 @@
 
 all: build
 
-build:                        ## build Wine + WineASIO in a container -> dist/
+build:                        ## build Wine + PipeASIO in a container -> dist/
 	./build.sh
 
 install:                      ## install the built Wine tree + launcher (end user)
@@ -19,7 +19,7 @@ vendor-cache:                 ## populate vendor/winetricks-cache for offline se
 	./scripts/vendor-winetricks-cache.sh
 
 verify:                       ## check vendored inputs against pinned checksums
-	cd vendor && sha256sum -c wine-base.sha256 wineasio.sha256
+	cd vendor && sha256sum -c wine-base.sha256 pipeasio.sha256 pipewire-sdk.sha256 ntsync-uapi.sha256
 
 clean:                        ## remove build outputs
 	rm -rf dist

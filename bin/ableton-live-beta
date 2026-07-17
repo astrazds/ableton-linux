@@ -23,16 +23,8 @@ if ! pgrep -af 'Ableton Live 12 Beta[.]exe' 2>/dev/null | grep -q 'ProgramData';
     /usr/bin/wineserver -k 2>/dev/null || true
 fi
 
-export WINEASIO_NUMBER_INPUTS="${WINEASIO_NUMBER_INPUTS:-2}"
-export WINEASIO_NUMBER_OUTPUTS="${WINEASIO_NUMBER_OUTPUTS:-2}"
-export WINEASIO_FIXED_BUFFERSIZE="${WINEASIO_FIXED_BUFFERSIZE:-on}"
-export WINEASIO_PREFERRED_BUFFERSIZE="${WINEASIO_PREFERRED_BUFFERSIZE:-256}"
-export WINEASIO_CONNECT_TO_HARDWARE="${WINEASIO_CONNECT_TO_HARDWARE:-on}"
-export PIPEWIRE_LATENCY="${PIPEWIRE_LATENCY:-256/48000}"
-
-if command -v jacklinkd >/dev/null 2>&1 && ! pgrep -x jacklinkd >/dev/null 2>&1; then
-    nohup jacklinkd >"${XDG_CACHE_HOME:-$HOME/.cache}/jacklinkd.log" 2>&1 &
-fi
+# Audio: PipeASIO -> PipeWire (native client). Defaults come from
+# ~/.config/pipeasio/config.ini; PIPEASIO_* variables override per launch.
 
 EXE='C:\ProgramData\Ableton\Live 12 Beta\Program\Ableton Live 12 Beta.exe'
 

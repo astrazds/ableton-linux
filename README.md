@@ -12,14 +12,14 @@ Place this installer + an Ableton Live zip file downloaded from Ableton.com in t
 
 ## Features
 
-- Live 12 Suite and Beta support
+- Support for all Live 12 editions (Intro, Standard, Suite, Trial), and experimental Live 12 Beta support.
 - Push 1 + 2 support.
 - Device recovery: audio and MIDI devices (Push included) survive in-session disconnect and reconnect.
 - Experimental Max/MSP and Max for Live support.
-- Native file dialogs including open/save dialogs are your desktop's (XDG portal).
-- Dark/light theme mode follows the system setting.
-- System font support, Ableton's UI renders with your desktop's fonts.
-- Low-latency audio via autobuilt WineASIO → JACK/PipeWire at 256 frames, with additional hardening to prevent crashes.
+- File dialogues including open/save dialogs are handled by your system's native file picker. 
+- Dark/light theme mode that follows your system's settings.
+- System font support, Display Ableton's AI with your desktop interface fonts.
+- Low-latency audio via autobuilt PipeASIO, a native PipeWire ASIO driver, at 256 frames, with additional hardening to prevent crashes. Live can record from any PipeWire source, no JACK layer needed.
 - VST3/JUCE/OpenGL editor windows render, take input, and scale correctly.
 - HiDPI support display scale auto-detected and recalibrated on every launch.
 - Extensions SDK support.
@@ -38,6 +38,12 @@ You can do that either by double clicking the `install-ableton-latest.run` insta
 sh ~/Downloads/install-ableton-latest.run
 ```
 
+## Updating
+
+You can update your existing installation by downloading a new version of the run script, and running it:
+
+`sh install-ableton-latest.run --update`
+
 ## Issues?
 
 File an issue on GitHub, there's some diagnostics scripts that will help diagnose the problem in ./beta/scripts.
@@ -47,9 +53,9 @@ File an issue on GitHub, there's some diagnostics scripts that will help diagnos
 A few more things to do after you launch for the first time:
 
 1. Ableton's Settings → untick Auto-Scale Plugin Window (prevents a plugin-window resize loop).
-2. Preferences → Audio → Driver Type ASIO → Device WineASIO.
+2. Preferences → Audio → Driver Type ASIO → Device PipeASIO.
 
-WineASIO can be tempermental; If you have any issues with WineASIO, Make a github issue or +1 an existing one and I'll fix as a priority!
+If you encounter any unexpected audio behaviour, open an issue or +1 an existing one and I'll fix as a priority!
 
 ## Installing plugins
 
@@ -62,7 +68,9 @@ You can also manually install plugin .vst3 files inside the `~/.wine-ableton/dri
 
 ## Push 1 + 2 support
 
-This is built in. Use Preferences → Link, Tempo & MIDI → exactly one `Push2` row, Live Port for both input and output. Like all other MIDI and Audio devices, Push will survive in-session disconnects. 
+This is built in. Use Preferences → Link, Tempo & MIDI → enable one `Push2` row, Live Port for both input and output, and enable the remote toggles. 
+
+Like all other MIDI and Audio devices, Push will survive in-session disconnects. 
 
 
 ## Development
@@ -74,13 +82,13 @@ Requirements are:
 - x86_64, glibc 2.35+ (any 2022+ distro)
 - GNOME or KDE 
 - `zstd`
-- `pipewire-jack`
+- `pipewire` 0.3.56 or newer (1.6+ recommended for the lowest latency)
 - `cabextract`,
 - `binutils`
 
 ## Project structure
 
-- [patches/](patches/): the Wine patch series + the wineasio series
+- [patches/](patches/): the Wine patch series + the pipeasio series
 - [scripts/](scripts/): install, prefix setup, launcher
 - [vendor/](vendor/): pinned build inputs
 - [notes/](notes/): patch notes and investigations
@@ -110,15 +118,18 @@ It verifies itself, installs the runtime, detects the display scale, creates the
 
 #### Display scale
 
-`setup-prefix.sh` and the launcher auto-detect the display scale (GNOME, KDE, sway, Hyprland, X11 `Xft.dpi`); the launcher recalibrates the prefix DPI on every start, so switching monitors needs only a Live restart. Only 100% and 125% are calibrated; anything else is preserved. Override with `ABLETON_DPI_MODE`.
+`setup-prefix.sh` and the launcher auto-detect the display scale (GNOME, KDE, sway, Hyprland, X11 `Xft.dpi`); the launcher recalibrates the prefix DPI on every start. Unfortunately, switching monitors still needs a Live restart if those monitors have different DPIs. You can manually override the default scaling behaviours with `ABLETON_DPI_MODE`.
 
-### Environment variables
+### Other environment variables
 
 Mostly unnecessary. But in case you need them: 
 
 - `ABLETON_WINE_ROOT` runtime path (default `~/.local/opt/wine-d2d1-nspa-11.11`)
 - `ABLETON_WINEPREFIX` prefix path (default `~/.wine-ableton`)
 - `ABLETON_DPI_MODE` `auto` | `preserve` | `100` | `fractional`
+- `ABLETON_THEME_MODE` `auto` | `dark` | `light` | `preserve` — the launcher syncs Live's light/dark theme key to the desktop scheme on every start; this overrides it
+- `ABLETON_LIVE_EXE` full path to a Live exe inside the prefix, when more than one edition/version is installed (default: the newest found)
+- `PIPEASIO_*` audio driver overrides, e.g. `PIPEASIO_PREFERRED_BUFFERSIZE=512` if you hear crackles; defaults live in `~/.config/pipeasio/config.ini`
 - `ENGINE=docker` for `build.sh` / `make-installer.sh`
 
 ### Steam Deck
@@ -128,21 +139,9 @@ Desktop Mode only. Add the host packages once, and (unfortunately) again after e
 ```bash
 sudo steamos-readonly disable
 sudo pacman-key --init && sudo pacman-key --populate archlinux holo
-sudo pacman -S cabextract binutils pipewire-jack
+sudo pacman -S cabextract binutils
 sudo steamos-readonly enable
 ```
-
-## Troubleshooting
-
-| Symptom | Fix |
-|---|---|
-| WineASIO missing from Live's device list | install `pipewire-jack`, restart Live |
-| Live hangs/crashes at startup opening audio | needs build `2026.07.13.3`+ (`ABLETON-WINE-BUILD-INFO.txt` in the runtime); still failing → run `./scripts/check-live-audio.sh` and report |
-| Crackling / dropouts | WineASIO panel → buffer 512 |
-| No hardware MIDI in Live | re-run `./scripts/install.sh` with a current tarball, restart Live |
-| File dialogs look like Windows 95 | install your desktop's `xdg-desktop-portal`; 32-bit programs always get the Wine dialog |
-| Windows resize endlessly / wrong UI size | restart Live (the launcher re-detects DPI); if it persists, re-run `setup-prefix.sh` with an explicit `ABLETON_DPI_MODE` |
-| `install.sh` says the runtime is in use | close Live, wait a few seconds, retry |
 
 ## More
 
@@ -152,4 +151,4 @@ Questions? [cade@parare.al](mailto:cade@parare.al)
 
 ### AI Disclosure
 
-Local models (Qwen 3.6) and Claude Opus were used during QA testing, documentation checking, and to help setup the build pipleline at the very end of this project's release.
+Local models (Qwen 3.6) and Claude Opus were used during QA testing, documentation checking, and to help setup the build pipeline at the very end of this project's release.

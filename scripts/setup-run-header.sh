@@ -3,12 +3,14 @@
 # Usage:  sh ableton-wine-setup-@VERSION@.run [options]
 # Options:
 #   --runtime-only   install the patched Wine only; skip making the Wine prefix
+#   --update         update an existing installation in place (Live, settings, license kept)
 #   --no-launch      never run the Ableton installer (zip/exe) automatically
 #   --extract DIR    unpack this installer's files into DIR and exit
 #   --uninstall      remove the installed Wine, launcher, and menu entries
 #   --help           this text
 # Environment:
-#   ABLETON_DPI_MODE  auto|preserve|100|fractional (overrides scale auto-detection)
+#   ABLETON_DPI_MODE    auto|preserve|100|fractional (overrides scale auto-detection)
+#   ABLETON_THEME_MODE  auto|dark|light|preserve (overrides the light/dark sync)
 # Everything after the marker line is a tar archive; this header never changes it.
 [ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
 set -euo pipefail
@@ -28,8 +30,9 @@ do_launch=1
 extract_dir=""
 while [ $# -gt 0 ]; do
     case "$1" in
-        --help|-h)      head -12 "$self" | sed -n '2,12{s/^# \{0,1\}//;p}'; exit 0 ;;
+        --help|-h)      head -14 "$self" | sed -n '2,14{s/^# \{0,1\}//;p}'; exit 0 ;;
         --runtime-only) mode=runtime ;;
+        --update)       mode=update ;;
         --no-launch)    do_launch=0 ;;
         --uninstall)    mode=uninstall ;;
         --extract)      mode=extract; extract_dir="${2:?--extract needs a directory}"; shift ;;
@@ -40,31 +43,90 @@ done
 
 say "== Ableton-on-Wine installer $VERSION =="
 
+# --- offer an in-place update when an installation is already here ------------
+# Rerunning the full install always worked (dated rollbacks throughout), but it
+# demands an Ableton download and walks every prompt again; update mode brings
+# runtime, launcher, and prefix policy to this kit's version and touches
+# nothing else — not Live, not settings, not the license.
+if [ "$mode" = install ] && [ -x "$HOME/.local/opt/$RUNTIME_NAME/bin/wine" ] \
+   && [ -f "${ABLETON_WINEPREFIX:-$HOME/.wine-ableton}/system.reg" ]; then
+    installed_ver="$(cat "$HOME/.local/share/ableton-wine/VERSION" 2>/dev/null || true)"
+    say ""
+    say "An existing installation was found${installed_ver:+ (version $installed_ver)}."
+    if [ -t 0 ]; then
+        printf 'Update it to %s? Ableton Live, your settings, and the license are kept. [Y/n] ' "$VERSION"
+        read -r ans || ans=""
+        case "$ans" in
+            [Nn]*) say "-- full install it is — the existing runtime gets a dated rollback" ;;
+            *)     mode=update ;;
+        esac
+    else
+        say "-- updating it to $VERSION (Ableton Live, settings, and the license are kept)"
+        mode=update
+    fi
+fi
+
 # --- find the Ableton payload next to this file, up front ---------------------
+# Any edition (Intro/Lite/Standard/Suite/Trial) and any major version works:
+# an ableton_live*.zip straight from ableton.com, or an already-unpacked installer .exe.
 find_live_payload() {
-    live_exe=""; live_zip=""
+    live_payloads=()
     local f base
     for f in "$stick_dir"/*; do
         [ -f "$f" ] || continue
         base="$(basename "$f" | tr '[:upper:]' '[:lower:]')"
         case "$base" in
-            ableton_live_suite_12*.zip|ableton_live*12*.zip) live_zip="$f" ;;
-            *ableton*.exe|*live*.exe)                        live_exe="$f" ;;
+            ableton_live*.zip|*ableton*.exe|*live*.exe) live_payloads+=("$f") ;;
         esac
     done
+    [ "${#live_payloads[@]}" -le 1 ] || \
+        mapfile -t live_payloads < <(printf '%s\n' "${live_payloads[@]}" | sort -V)
+}
+choose_live_payload() {    # picks one of live_payloads into live_exe or live_zip
+    live_exe=""; live_zip=""
+    local n="${#live_payloads[@]}" pick ans i
+    [ "$n" -gt 0 ] || return 0
+    if [ "$n" -eq 1 ]; then
+        pick="${live_payloads[0]}"
+    elif [ -t 0 ]; then
+        say ""
+        say "More than one Ableton download is next to this file:"
+        i=1
+        for pick in "${live_payloads[@]}"; do say "  $i) $(basename "$pick")"; i=$((i+1)); done
+        while :; do
+            printf 'Which one should be installed? [1-%s, Enter = %s] ' "$n" "$n"
+            read -r ans || ans=""
+            [ -n "$ans" ] || ans="$n"
+            case "$ans" in
+                *[!0-9]*) ;;
+                *) [ "$ans" -ge 1 ] && [ "$ans" -le "$n" ] && break ;;
+            esac
+            say "Please answer with a number between 1 and $n."
+        done
+        pick="${live_payloads[$((ans-1))]}"
+    else
+        pick="${live_payloads[$((n-1))]}"
+        say "-- several Ableton downloads found; picking the newest: $(basename "$pick")"
+    fi
+    case "$(basename "$pick" | tr '[:upper:]' '[:lower:]')" in
+        *.zip) live_zip="$pick" ;;
+        *)     live_exe="$pick" ;;
+    esac
 }
 manual_install=1
 if [ "$mode" = install ] && [ "$do_launch" -eq 1 ]; then
     find_live_payload
+    choose_live_payload
     if [ -z "$live_exe$live_zip" ] && [ -t 0 ]; then
         say ""
         say "No Ableton installer found next to this file"
-        say "(looked for ableton_live_suite_12*.zip or an Ableton .exe in $stick_dir)."
+        say "(looked for an ableton_live*.zip — any edition — or an Ableton .exe in $stick_dir)."
         say "Put it here and press Enter. Or press Enter without it — the"
         say "manual install commands are printed at the end."
         printf '> '
         read -r _ || true
         find_live_payload
+        choose_live_payload
     fi
     if [ -n "$live_exe$live_zip" ]; then
         manual_install=0
@@ -117,20 +179,31 @@ if [ -n "$glibc" ]; then
     say "   glibc $glibc: ok"
 fi
 # no grep -q: under pipefail it SIGPIPEs ldconfig and falsely fires this warning
-if ! ldconfig -p 2>/dev/null | grep 'libjack\.so\.0' >/dev/null; then
-    say "   WARNING: one sound-system piece is missing: PipeWire's JACK library."
+if ! ldconfig -p 2>/dev/null | grep 'libpipewire-0\.3\.so\.0' >/dev/null; then
+    say "   WARNING: one sound-system piece is missing: the PipeWire client library."
     say "   Everything will install fine, but Live will have NO SOUND until you"
-    say "   add it (package: pipewire-jack). On the Steam Deck, run:"
-    say "     sudo steamos-readonly disable"
-    say "     sudo pacman-key --init && sudo pacman-key --populate archlinux holo"
-    say "     sudo pacman -S pipewire-jack"
-    say "     sudo steamos-readonly enable"
+    say "   add it (package: pipewire, 0.3.56 or newer). Nearly every 2023+ distro"
+    say "   ships it by default; the Steam Deck already has it."
 fi
 # Bundled static cabextract covers machines that lack the host package.
 if ! command -v cabextract >/dev/null; then
     say "   this machine has no 'cabextract' — using the copy bundled in this installer"
 fi
 export PATH="$kit/bin:$PATH"
+
+# --- update an existing installation ------------------------------------------
+if [ "$mode" = update ]; then
+    say "-- updating the patched Wine (a dated rollback of the old runtime is kept)"
+    bash "$kit/scripts/install.sh"
+    say "-- refreshing the Wine prefix (registry policy + runtime DLL healing; Live untouched)"
+    bash "$kit/scripts/setup-prefix.sh" --refresh
+    say ""
+    say "================================================================"
+    say "Done — updated to $VERSION. Ableton Live itself was not touched."
+    say "Launch Live:   ~/.local/bin/ableton-live"
+    say "================================================================"
+    exit 0
+fi
 
 # --- install the runtime ------------------------------------------------------
 say "-- installing the patched Wine (goes to ~/.local/opt, touches nothing else)"
@@ -201,8 +274,8 @@ if [ "$live_installed" -eq 1 ]; then
     say "Done — Ableton Live is installed."
 else
     say "Done, except Ableton Live itself. To install it manually:"
-    say "  1) unpack your ableton_live_suite_12*.zip:"
-    say "       unzip /path/to/ableton_live_suite_12*.zip -d ~/live-installer"
+    say "  1) unpack your Ableton zip (any edition):"
+    say "       unzip /path/to/ableton_live*.zip -d ~/live-installer"
     say "       (no unzip? try: bsdtar -xf FILE.zip -C ~/live-installer)"
     say "  2) run the installer through this Wine, from inside that directory:"
     say "       cd ~/live-installer && WINEPREFIX=~/.wine-ableton \\"
@@ -211,7 +284,7 @@ fi
 say "Launch Live:   ~/.local/bin/ableton-live"
 say "Then, inside Live (both matter):"
 say "  * Options menu -> untick 'Auto-Scale Plugin Window'"
-say "  * Preferences -> Audio -> Driver Type: ASIO -> Device: WineASIO"
+say "  * Preferences -> Audio -> Driver Type: ASIO -> Device: PipeASIO"
 say "================================================================"
 exit 0
 __PAYLOAD_BELOW__

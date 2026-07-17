@@ -15,7 +15,7 @@ its responsiveness follow-up, consolidated into one integration boundary.
 MR10060's patch 4 only adds a test case whose Wine 11.0 context no longer
 applies; excluded.
 
-Architecture: a 64-bit `GetOpenFileNameW` smoke test takes the portal path
+Architecture: a 64-bit `GetOpenFileNameW` test program takes the portal path
 (`WINE_UNIX_CALL`) and returns `STATUS_CANCELLED` directly on cancel; Wine's
 fallback dialog is never created. The same PE32 test reaches the eligibility
 check but cannot load the portal Unix library under new-WoW64, so 32-bit

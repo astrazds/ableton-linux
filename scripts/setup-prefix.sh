@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 # End-user step 2: create or refresh the Ableton Wine prefix. Idempotent.
 # Does not install Ableton Live itself and carries no license.
+# --refresh: maintenance pass on an EXISTING prefix (used by the .run's update
+# mode) — re-applies registry policy and heals runtime DLLs, but skips the slow
+# winetricks pass; the fonts/runtimes it installs are already in the prefix.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/.." && pwd)"
+
+refresh=0
+case "${1:-}" in
+    --refresh) refresh=1 ;;
+    "") ;;
+    *) echo "!! unknown option: $1 (only --refresh is supported)" >&2; exit 2 ;;
+esac
 
 unset WINELOADER WINEDLLPATH WINEDLLOVERRIDES WINEARCH WINEESYNC WINEFSYNC
 WINE_ROOT="${ABLETON_WINE_ROOT:-$HOME/.local/opt/wine-d2d1-nspa-11.11}"
@@ -17,10 +27,10 @@ for required in \
     lib/wine/x86_64-unix/comdlg32.so \
     lib/wine/x86_64-windows/libusb-1.0.dll \
     lib/wine/x86_64-unix/libusb-1.0.so \
-    lib/wine/x86_64-windows/wineasio64.dll \
-    lib/wine/x86_64-windows/wineasio.dll \
-    lib/wine/x86_64-unix/wineasio64.dll.so \
-    lib/wine/x86_64-unix/wineasio.dll.so; do
+    lib/wine/x86_64-windows/pipeasio64.dll \
+    lib/wine/x86_64-windows/pipeasio.dll \
+    lib/wine/x86_64-unix/pipeasio64.dll.so \
+    lib/wine/x86_64-unix/pipeasio.dll.so; do
     [ -s "$WINE_ROOT/$required" ] || { echo "!! packaged runtime is missing $required"; exit 1; }
 done
 
@@ -31,11 +41,20 @@ done
 
 # DPI blocks: 100% -> LogPixels=96 + no IFEO dpiAwareness; 125% -> LogPixels=192 + IFEO=2. auto applies
 # the detected block on a fresh prefix, preserves an existing one, refuses uncalibrated/undetectable scales.
-ifeo_key='HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\Ableton Live 12 Suite.exe'
+# The dpiAwareness IFEO is keyed on the exe name, so it is applied per installed Live (any edition);
+# on a fresh prefix Live isn't installed yet — the launcher applies it on every start.
+ifeo_root='HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options'
+live_exe_names() {   # basenames of every Live exe installed in this prefix
+    ls "$WINEPREFIX"/drive_c/ProgramData/Ableton/*/Program/"Ableton Live"*.exe 2>/dev/null \
+        | while IFS= read -r f; do basename "$f"; done
+}
 
 # Shared display-scale detection (see detect-scale.sh).
 . "$here/detect-scale.sh"
 detect_display_scale() { ableton_detect_scale; }
+
+# Shared host light/dark-scheme detection (see detect-theme.sh).
+. "$here/detect-theme.sh"
 
 block_for_scale() {  # scale -> calibrated block name, fails on uncalibrated
     case "$1" in
@@ -46,17 +65,21 @@ block_for_scale() {  # scale -> calibrated block name, fails on uncalibrated
 }
 
 current_dpi_block() {  # what an EXISTING prefix holds: 100 | fractional | custom
-    local lp ifeo=absent
+    local lp ifeo=absent name installs=0
     lp="$(wine reg query 'HKCU\Control Panel\Desktop' /v LogPixels 2>/dev/null \
           | awk '$1=="LogPixels"{gsub(/\r/,"",$3); print tolower($3)}')"   # reg output is CRLF
     [ -n "$lp" ] || lp=0x60          # wineboot default is 96
-    if wine reg query "$ifeo_key" /v dpiAwareness >/dev/null 2>&1; then
-        ifeo=present
-    fi
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        installs=1
+        if wine reg query "$ifeo_root\\$name" /v dpiAwareness >/dev/null 2>&1; then
+            ifeo=present
+        fi
+    done < <(live_exe_names)
     if [ "$lp" = 0x60 ] && [ "$ifeo" = absent ]; then
         echo 100
-    elif [ "$lp" = 0xc0 ] && [ "$ifeo" = present ]; then
-        echo fractional
+    elif [ "$lp" = 0xc0 ] && { [ "$ifeo" = present ] || [ "$installs" -eq 0 ]; }; then
+        echo fractional    # no Live installed yet: LogPixels alone decides; the launcher adds the IFEO
     else
         echo custom
     fi
@@ -85,6 +108,10 @@ check_mutter_knob() {  # warn when mutter's xwayland-native-scaling disagrees
 
 fresh_prefix=0
 [ -f "$WINEPREFIX/system.reg" ] || fresh_prefix=1
+if [ "$refresh" -eq 1 ] && [ "$fresh_prefix" -eq 1 ]; then
+    echo "!! --refresh needs an existing prefix at $WINEPREFIX — run without it to create one" >&2
+    exit 2
+fi
 
 # Resolve the mode now so a fresh prefix fails fast, before wineboot/winetricks run.
 dpi_mode="${ABLETON_DPI_MODE:-auto}"
@@ -135,21 +162,25 @@ echo "== [1/5] initialize prefix at $WINEPREFIX =="
 wineboot -u
 "$WINESERVER" -w
 
-echo "== [2/5] winetricks: corefonts vcrun2022 mfc42 =="
-export W_CACHE_OVERRIDE=""            # unused
-export WINETRICKS_LATEST_VERSION_CHECK=disabled
-export WINETRICKS_SUPER_QUIET=1
-# Use the bundled payload cache if present (mfc42 downloads if not vendored).
-tmpc=""
-if [ -d "$root/vendor/winetricks-cache" ]; then
-    tmpc="$(mktemp -d)"
-    ln -s "$root/vendor/winetricks-cache" "$tmpc/winetricks"
-    export XDG_CACHE_HOME="$tmpc"
-    echo "   using bundled winetricks cache ($root/vendor/winetricks-cache)"
+if [ "$refresh" -eq 1 ]; then
+    echo "== [2/5] winetricks: skipped (--refresh keeps the installed fonts/runtimes) =="
+else
+    echo "== [2/5] winetricks: corefonts vcrun2022 mfc42 =="
+    export W_CACHE_OVERRIDE=""            # unused
+    export WINETRICKS_LATEST_VERSION_CHECK=disabled
+    export WINETRICKS_SUPER_QUIET=1
+    # Use the bundled payload cache if present (mfc42 downloads if not vendored).
+    tmpc=""
+    if [ -d "$root/vendor/winetricks-cache" ]; then
+        tmpc="$(mktemp -d)"
+        ln -s "$root/vendor/winetricks-cache" "$tmpc/winetricks"
+        export XDG_CACHE_HOME="$tmpc"
+        echo "   using bundled winetricks cache ($root/vendor/winetricks-cache)"
+    fi
+    WINE="$WINE_ROOT/bin/wine" bash "$root/vendor/winetricks" -q -f corefonts vcrun2022 mfc42
+    [ -n "$tmpc" ] && rm -rf "$tmpc"
+    "$WINESERVER" -w
 fi
-WINE="$WINE_ROOT/bin/wine" bash "$root/vendor/winetricks" -q -f corefonts vcrun2022 mfc42
-[ -n "$tmpc" ] && rm -rf "$tmpc"
-"$WINESERVER" -w
 
 # wineboot -u replaces redist natives (msvcp140 etc.) with wine's higher-versioned stubs, which
 # Live aborts on. Re-copy every builtin-identical or missing redist DLL, then gate: none may remain.
@@ -192,12 +223,21 @@ echo "== [3/5] DPI policy ($dpi_mode -> $dpi_block) =="
 case "$dpi_block" in
   100)
     wine reg add 'HKCU\Control Panel\Desktop' /v LogPixels /t REG_DWORD /d 96 /f
-    wine reg delete "$ifeo_key" /v dpiAwareness /f >/dev/null 2>&1 || true  # reg.exe errors land on stdout
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        wine reg delete "$ifeo_root\\$name" /v dpiAwareness /f >/dev/null 2>&1 || true  # reg.exe errors land on stdout
+    done < <(live_exe_names)
     check_mutter_knob 100
     ;;
   fractional)
     wine reg add 'HKCU\Control Panel\Desktop' /v LogPixels /t REG_DWORD /d 192 /f
-    wine reg add "$ifeo_key" /v dpiAwareness /t REG_DWORD /d 2 /f
+    ifeo_set=0
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        ifeo_set=1
+        wine reg add "$ifeo_root\\$name" /v dpiAwareness /t REG_DWORD /d 2 /f
+    done < <(live_exe_names)
+    [ "$ifeo_set" -eq 1 ] || echo "   (Live not installed yet — the launcher sets its per-app DPI flag on first start)"
     check_mutter_knob fractional
     ;;
   preserve)
@@ -211,11 +251,48 @@ case "$dpi_block" in
 esac
 "$WINESERVER" -w
 
-echo "== [4/5] register packaged WineASIO =="
-ldconfig -p 2>/dev/null | grep -F 'libjack.so.0' >/dev/null || \
-  echo "!! host libjack.so.0 not found; install pipewire-jack or JACK2"
-wine regsvr32 wineasio64.dll
+echo "== [3b/5] theme: mirror the host light/dark scheme =="
+# Live's "Follow system" theme reads AppsUseLightTheme; without the key it always renders
+# light. Seed it from the host scheme (the launcher re-syncs on every start), plus the
+# EnableTransparency=0 the known-good prefixes carry.
+if host_scheme="$(ableton_detect_theme)"; then
+    case "$host_scheme" in dark) light_val=0 ;; *) light_val=1 ;; esac
+    echo "   host scheme: $host_scheme"
+    wine reg add 'HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' /v AppsUseLightTheme /t REG_DWORD /d "$light_val" /f
+else
+    echo "   host scheme not detectable — leaving the theme key as-is (the launcher retries on every start)"
+fi
+wine reg add 'HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' /v EnableTransparency /t REG_DWORD /d 0 /f
 "$WINESERVER" -w
+
+echo "== [4/5] register packaged PipeASIO =="
+ldconfig -p 2>/dev/null | grep -F 'libpipewire-0.3.so.0' >/dev/null || \
+  echo "!! host libpipewire-0.3.so.0 not found; install pipewire (0.3.56 or newer, 1.6+ recommended)"
+# Pre-2026-07 runtimes shipped WineASIO; drop its registration and the stale
+# system32 placeholders so nothing references the removed driver. Harmless on
+# fresh prefixes.
+wine reg delete 'HKLM\Software\ASIO\WineASIO' /f >/dev/null 2>&1 || true
+wine reg delete 'HKCR\CLSID\{48D0C522-BFCC-45CC-8B84-17F25F33E6E8}' /f >/dev/null 2>&1 || true
+rm -f "$WINEPREFIX"/drive_c/windows/system32/wineasio64.dll \
+      "$WINEPREFIX"/drive_c/windows/system32/wineasio.dll
+wine regsvr32 pipeasio64.dll
+"$WINESERVER" -w
+
+# Seed the driver defaults once; the file is the config surface (PIPEASIO_*
+# environment variables override it per launch, see the README).
+pipeasio_cfg="${XDG_CONFIG_HOME:-$HOME/.config}/pipeasio/config.ini"
+if [ ! -s "$pipeasio_cfg" ]; then
+    mkdir -p "$(dirname "$pipeasio_cfg")"
+    cat > "$pipeasio_cfg" <<'EOF'
+[pipeasio]
+inputs = 2
+outputs = 2
+buffer_size = 256
+fixed_buffer_size = true
+auto_connect = true
+EOF
+    echo "   seeded $pipeasio_cfg (2 in / 2 out, fixed 256-frame buffer)"
+fi
 
 echo "== [5/5] set portal policy and scope Push 2 bridge to its helper =="
 # Default only — a policy the user set with set-file-portal-policy survives re-runs.
@@ -252,16 +329,16 @@ cat <<EOF
 ────────────────────────────────────────────────────────────────────────
 Remaining steps (you supply Ableton + your own license):
 
-  1. Install Live 12 through THIS wine (plain wine reads WINEPREFIX, not
-     the ABLETON_* launcher variables):
+  1. Install Live (any edition) through THIS wine (plain wine reads
+     WINEPREFIX, not the ABLETON_* launcher variables):
        WINEPREFIX=$WINEPREFIX \\
-       $WINE_ROOT/bin/wine "/path/to/Ableton Live 12 Suite Installer.exe"
+       $WINE_ROOT/bin/wine "/path/to/Ableton Live NN Edition Installer.exe"
 
   2. Launch:            ableton-live
   3. Authorize Live with your own account (binds to this prefix's MachineGuid).
   4. In Live: Options > uncheck "Auto-Scale Plugin Window"
      (prevents a plugin-window resize loop with DPI-unaware plugin UIs).
-  5. Audio: Preferences > Audio > Driver Type: ASIO > Device: WineASIO.
-     WineASIO routes to JACK — on PipeWire, install 'pipewire-jack'.
+  5. Audio: Preferences > Audio > Driver Type: ASIO > Device: PipeASIO.
+     PipeASIO is a native PipeWire client — no JACK layer involved.
 ────────────────────────────────────────────────────────────────────────
 EOF

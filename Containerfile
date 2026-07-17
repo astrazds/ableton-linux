@@ -29,9 +29,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       # audio: ALSA is REQUIRED — winealsa.drv (Wine's ALSA MIDI + audio backend)
       # is silently dropped by configure without libasound2-dev, which leaves Live
       # with no hardware MIDI (only "Computer Keyboard"); pulse for wine's own
-      # driver; jack dev for winejack.drv.
-      # (WineASIO itself weak-links jack at runtime, needs no dev headers)
-      libasound2-dev libpulse-dev libjack-jackd2-dev \
+      # driver. PipeASIO builds against the vendored PipeWire SDK below, not a
+      # jammy package (jammy's 0.3.48 predates the thread-utils API it needs).
+      libasound2-dev libpulse-dev \
       # TLS (Live online auth / pack downloads), USB display bridge, XDG portal
       libgnutls28-dev libusb-1.0-0-dev libudev-dev libdbus-1-dev \
  && rm -rf /var/lib/apt/lists/* \
@@ -40,5 +40,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ln -sf "$t-${LLVM_VERSION}" "/usr/bin/$t"; \
     done \
  && clang --version | head -1
+
+# 3. ntsync UAPI header: jammy's linux-libc-dev is 5.15, but Wine needs
+# linux/ntsync.h (kernel >= 6.14) or configure silently drops ntsync and every
+# NT sync wait becomes a wineserver round trip. Vendored and sha256-pinned;
+# see notes/ABLETON-WINE-NTSYNC-REGRESSION.md.
+COPY vendor/ntsync-uapi/linux/ntsync.h /opt/ntsync-uapi/linux/ntsync.h
+
+# 4. PipeWire SDK for PipeASIO: headers + link-time .so, vendored as Ubuntu's
+# 1.6.2 debs and sha256-pinned (build.sh verifies). Link-time only — the
+# produced pipeasio64.dll.so records DT_NEEDED libpipewire-0.3.so.0 and
+# resolves against the user's PipeWire at runtime (floor: 0.3.56, the first
+# release with pw_context_get_data_loop + pw_data_loop_set_thread_utils;
+# container-build.sh gates both). jammy's own 0.3.48 is too old to compile it.
+COPY vendor/pipewire-sdk/*.deb /tmp/pipewire-sdk/
+RUN for d in /tmp/pipewire-sdk/*.deb; do dpkg-deb -x "$d" /opt/pipewire-sdk; done \
+ && ln -sf libpipewire-0.3.so.0 /opt/pipewire-sdk/usr/lib/x86_64-linux-gnu/libpipewire-0.3.so \
+ && rm -rf /tmp/pipewire-sdk \
+ && test -e /opt/pipewire-sdk/usr/include/pipewire-0.3/pipewire/pipewire.h
 
 WORKDIR /work

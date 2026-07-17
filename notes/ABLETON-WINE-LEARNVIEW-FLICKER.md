@@ -20,7 +20,7 @@ From `+dxgi` traces, dcompspy/hwndspy, and X pixel sampling:
    already-299-wide window; that crop of wide-layout content is the mangled
    band.
 3. Correct paints never reach the screen. After the resize the comp buffer
-   is correct and full-frame BitBlts demonstrably execute, yet X-side pixels
+   is correct and full-frame BitBlts execute, yet X-side pixels
    never change (1 ms sampling: zero deltas). The Intermediate D3D Window has
    `WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT` and never
    calls SetLayeredWindowAttributes. On Windows, NOREDIRECTIONBITMAP means

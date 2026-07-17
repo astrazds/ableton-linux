@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Check that Live opens the WineASIO driver without crashing (e.g. on a sample-rate mismatch).
+# Check that Live opens the packaged ASIO driver (PipeASIO) without crashing (e.g. on a sample-rate mismatch).
 # Run on the target machine after Live is installed. Exit 0 = driver opened, no FatalError logged.
 set -uo pipefail
 
@@ -29,7 +29,7 @@ while [ $SECONDS -lt $deadline ]; do
     if printf '%s' "$new" | grep -qa "Open: finished"; then
         verdict=opened; break
     fi
-    if ! pgrep -f "Ableton Live 12 Suite.exe" >/dev/null 2>&1; then
+    if ! pgrep -f "Ableton Live.*\.exe" >/dev/null 2>&1; then
         verdict=died; break
     fi
 done
@@ -55,7 +55,7 @@ case "$verdict" in
         exit 1 ;;
     *)
         echo "!! FAIL: Live never finished opening the driver within ${TIMEOUT}s" >&2
-        echo "!! (a hung 'Open: started' means the JACK graph never came up —" >&2
+        echo "!! (a hung 'Open: started' means the PipeWire graph never came up —" >&2
         echo "!!  check 'pw-metadata -n settings' for a forced clock rate)" >&2
         exit 1 ;;
 esac
