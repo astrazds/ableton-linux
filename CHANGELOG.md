@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.07.19.2
+
+- The real fix for dropdown menus misbehaving under GNOME, Cinnamon and KDE (issue #3). The 2026.07.19.1 focus fix (Wine patch 0038) turned out to cover only the menu bar; the Preferences dropdowns are Live's own popup windows, and Live pokes them while they are open with a window call that is a no-op on Windows but made Wine hand the open popup to the window manager as a normal dialog, mid-click. That handover was the flash on select, the eaten first click, the wobble under GNOME shell extensions, and the phantom "second popup" shadow under KDE. Wine now refuses to change a window's management mode while it is on screen (Wine patch 0039, notes/ABLETON-WINE-DROPDOWN-MANAGED-FLIP.md). Root-caused from a traced live session on GNOME and verified the same way; patch 0038 stays, it covers a separate menu-bar path.
+
 ## 2026.07.19.1
 
 - Fix choppy, slowed-down, stuttering audio under PipeASIO after updating to 2026.07.18.1 (issue #29). That release seeded `-DontCombineAPCs` into Live's Options.txt. The option cuts idle CPU, but during playback the uncoalesced APCs flood the wineserver and starve the audio callback. The prefix refresh now removes the line instead of adding it. If you added the line by hand after reading the 2026.07.18.1 changelog, remove it. This supersedes that release's "CPU eating" item: the 30-40% idle CPU thread is back until the fix lands on the Wine side (notes/ABLETON-WINE-APC-COALESCING.md).
